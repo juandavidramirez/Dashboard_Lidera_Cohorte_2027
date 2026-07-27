@@ -1,0 +1,6 @@
+{
+  "name": "Dashboard LIDERA 2027 - Enseña por Colombia",
+  "description": "Dashboard de Difusión e Interés LIDERA 2027 para Enseña por Colombia: monitoreo de elegibilidad, rutas STEM y bilingüe, tendencias y canales de reclutamiento.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
