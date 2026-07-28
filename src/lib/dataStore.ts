@@ -1,5 +1,6 @@
 import { Candidate, GoalTarget, UniversityMapping, AuditLogItem, EligibilityStatus, IneligibilityReason, RouteType } from '../types';
 import { INITIAL_CANDIDATES, INITIAL_GOAL_TARGETS, INITIAL_UNIVERSITY_MAPPINGS, INITIAL_AUDIT_LOGS } from '../data/mockData';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 const STORAGE_KEYS = {
   CANDIDATES: 'exc_lidera_2027_candidates',
@@ -7,6 +8,63 @@ const STORAGE_KEYS = {
   UNIVERSITIES: 'exc_lidera_2027_universities',
   LOGS: 'exc_lidera_2027_logs'
 };
+
+// Map TypeScript Candidate to Supabase Row
+function candidateToRow(cand: Candidate) {
+  return {
+    id: cand.id,
+    full_name: cand.fullName,
+    email: cand.email,
+    phone: cand.phone,
+    university_raw: cand.universityRaw,
+    university_normalized: cand.universityNormalized,
+    department: cand.department,
+    city: cand.city,
+    career: cand.career,
+    graduation_year: cand.graduationYear,
+    gpa: cand.gpa,
+    is_bilingual: cand.isBilingual,
+    english_level: cand.englishLevel,
+    is_stem: cand.isStem,
+    route: cand.route,
+    channel: cand.channel,
+    eligibility: cand.eligibility,
+    ineligibility_reason: cand.ineligibilityReason,
+    registration_date: cand.registrationDate,
+    month: cand.month,
+    notes: cand.notes || '',
+    referred_by: cand.referredBy || ''
+  };
+}
+
+// Map Supabase Row to Candidate
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToCandidate(row: any): Candidate {
+  return {
+    id: row.id,
+    fullName: row.full_name || '',
+    email: row.email || '',
+    phone: row.phone || '',
+    universityRaw: row.university_raw || '',
+    universityNormalized: row.university_normalized || '',
+    department: row.department || '',
+    city: row.city || '',
+    career: row.career || '',
+    graduationYear: Number(row.graduation_year || 2026),
+    gpa: Number(row.gpa || 0),
+    isBilingual: Boolean(row.is_bilingual),
+    englishLevel: row.english_level || 'A1',
+    isStem: Boolean(row.is_stem),
+    route: row.route || 'General / No Priorizado',
+    channel: row.channel || 'Otros',
+    eligibility: row.eligibility || 'Elegible',
+    ineligibilityReason: row.ineligibility_reason || 'Ninguno (Es Elegible)',
+    registrationDate: row.registration_date || new Date().toISOString().split('T')[0],
+    month: row.month || 'Ene',
+    notes: row.notes,
+    referredBy: row.referred_by
+  };
+}
 
 // Evaluate candidate eligibility based on LIDERA 2027 Rules
 export function evaluateEligibility(data: Partial<Candidate>): { eligibility: EligibilityStatus; ineligibilityReason: IneligibilityReason; route: RouteType } {
@@ -48,9 +106,14 @@ class DataStore {
   private universities: UniversityMapping[] = [];
   private logs: AuditLogItem[] = [];
   private listeners: Array<() => void> = [];
+  private isSyncing = false;
+  private lastSyncError: string | null = null;
 
   constructor() {
     this.init();
+    if (isSupabaseConfigured) {
+      this.loadFromSupabase();
+    }
   }
 
   private init() {
@@ -98,7 +161,118 @@ class DataStore {
     this.notify();
   }
 
-  // Candidates
+  // --- SUPABASE INTEGRATION METHODS ---
+  public getSupabaseStatus() {
+    return {
+      configured: isSupabaseConfigured,
+      syncing: this.isSyncing,
+      error: this.lastSyncError
+    };
+  }
+
+  public async loadFromSupabase(): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    this.isSyncing = true;
+    this.lastSyncError = null;
+    this.notify();
+
+    try {
+      // 1. Fetch Candidates
+      const { data: candData, error: candError } = await supabase
+        .from('candidates_convocatoria')
+        .select('*')
+        .order('registration_date', { ascending: false });
+
+      if (candError) throw candError;
+
+      if (candData && candData.length > 0) {
+        this.candidates = candData.map(rowToCandidate);
+      }
+
+      // 2. Fetch Goals
+      const { data: goalData, error: goalError } = await supabase
+        .from('goals_2027')
+        .select('*');
+
+      if (!goalError && goalData && goalData.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.goals = goalData.map((g: any) => ({
+          id: g.id,
+          category: g.category,
+          metricName: g.metric_name,
+          target2027: Number(g.target2027),
+          current2027: Number(g.current2027),
+          unit: g.unit,
+          deadline: g.deadline,
+          status: g.status
+        }));
+      }
+
+      this.save();
+      return true;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('Could not load data from Supabase, falling back to local data:', message);
+      this.lastSyncError = message;
+      return false;
+    } finally {
+      this.isSyncing = false;
+      this.notify();
+    }
+  }
+
+  public async seedToSupabase(): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    this.isSyncing = true;
+    this.lastSyncError = null;
+    this.notify();
+
+    try {
+      const candidateRows = this.candidates.map(candidateToRow);
+      const { error: candErr } = await supabase
+        .from('candidates_convocatoria')
+        .upsert(candidateRows, { onConflict: 'id' });
+
+      if (candErr) throw candErr;
+
+      const goalRows = this.goals.map(g => ({
+        id: g.id,
+        category: g.category,
+        metric_name: g.metricName,
+        target2027: g.target2027,
+        current2027: g.current2027,
+        unit: g.unit,
+        deadline: g.deadline,
+        status: g.status
+      }));
+
+      const { error: goalErr } = await supabase
+        .from('goals_2027')
+        .upsert(goalRows, { onConflict: 'id' });
+
+      if (goalErr) throw goalErr;
+
+      this.addAuditLogInternal(
+        'Sincronización Supabase',
+        `Se enviaron ${candidateRows.length} registros a la base de datos Supabase.`,
+        'create'
+      );
+
+      return true;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Error seeding data to Supabase:', message);
+      this.lastSyncError = message;
+      return false;
+    } finally {
+      this.isSyncing = false;
+      this.notify();
+    }
+  }
+
+  // --- CANDIDATES CRUD ---
   public getCandidates(): Candidate[] {
     return [...this.candidates];
   }
@@ -121,6 +295,16 @@ class DataStore {
     );
 
     this.save();
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('candidates_convocatoria')
+        .insert([candidateToRow(newCand)])
+        .then(({ error }) => {
+          if (error) console.error('Supabase async insert error:', error.message);
+        });
+    }
+
     return newCand;
   }
 
@@ -148,6 +332,16 @@ class DataStore {
     );
 
     this.save();
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('candidates_convocatoria')
+        .upsert(candidateToRow(updatedCand))
+        .then(({ error }) => {
+          if (error) console.error('Supabase async update error:', error.message);
+        });
+    }
+
     return updatedCand;
   }
 
@@ -161,6 +355,16 @@ class DataStore {
         'update'
       );
       this.save();
+
+      if (isSupabaseConfigured && supabase) {
+        supabase
+          .from('candidates_convocatoria')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => {
+            if (error) console.error('Supabase async delete error:', error.message);
+          });
+      }
     }
   }
 
@@ -187,6 +391,19 @@ class DataStore {
     );
 
     this.save();
+
+    if (isSupabaseConfigured && supabase) {
+      const updatedRows = this.candidates
+        .filter(c => ids.includes(c.id))
+        .map(candidateToRow);
+
+      supabase
+        .from('candidates_convocatoria')
+        .upsert(updatedRows)
+        .then(({ error }) => {
+          if (error) console.error('Supabase async batch update error:', error.message);
+        });
+    }
   }
 
   // Goals
@@ -209,6 +426,25 @@ class DataStore {
     );
 
     this.save();
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('goals_2027')
+        .upsert({
+          id: g.id,
+          category: g.category,
+          metric_name: g.metricName,
+          target2027: g.target2027,
+          current2027: g.current2027,
+          unit: g.unit,
+          deadline: g.deadline,
+          status: g.status
+        })
+        .then(({ error }) => {
+          if (error) console.error('Supabase async goal update error:', error.message);
+        });
+    }
+
     return g;
   }
 
