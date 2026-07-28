@@ -90,40 +90,36 @@ export default function App() {
     addToast('success', 'Variante Agregada', `Variante "${variant}" vinculada al catálogo oficial.`);
   };
 
-  const handleSyncSheets = () => {
+  const handleSyncSheets = async () => {
     setIsSyncing(true);
-    setTimeout(() => {
-      // Simulate incoming responses from Google Sheets 2027
-      dataStore.addCandidate({
-        fullName: 'Esteban Mateo Pareja',
-        email: 'esteban.pareja@unal.edu.co',
-        phone: '+57 319 888 1234',
-        universityRaw: 'UNAL Sede Medellín',
-        universityNormalized: 'Universidad Nacional de Colombia',
-        department: 'Antioquia',
-        city: 'Medellín',
-        career: 'Ingeniería Civil',
-        graduationYear: 2026,
-        gpa: 4.3,
-        isBilingual: true,
-        englishLevel: 'C1',
-        isStem: true,
-        route: 'STEM',
-        channel: 'LIDERA en RRSS',
-        eligibility: 'Elegible',
-        ineligibilityReason: 'Ninguno (Es Elegible)',
-        registrationDate: new Date().toISOString().substring(0, 10),
-        month: 'Jul',
-        notes: 'Sincronizado automáticamente desde Google Sheets (Respuestas en vivo).'
-      });
+    const status = dataStore.getSupabaseStatus();
 
+    if (status.configured) {
+      const success = await dataStore.loadFromSupabase();
       setIsSyncing(false);
-      addToast(
-        'success',
-        'Sincronización Exitosa',
-        'Se han traído los últimos registros del Formulario de Interés Google Sheets (2027).'
-      );
-    }, 900);
+      if (success) {
+        addToast(
+          'success',
+          'Sincronización Supabase',
+          'Se han actualizado los registros en vivo directamente desde la base de datos Supabase.'
+        );
+      } else {
+        addToast(
+          'error',
+          'Error de Conexión',
+          `No se pudo sincronizar desde Supabase: ${status.error || 'Verifica las credenciales'}`
+        );
+      }
+    } else {
+      setTimeout(() => {
+        setIsSyncing(false);
+        addToast(
+          'info',
+          'Modo Almacenamiento Local',
+          'Se han refrescado los datos en pantalla. Configura Supabase en el encabezado para vincular tu base de datos viva.'
+        );
+      }, 500);
+    }
   };
 
   const handleResetData = () => {
@@ -227,6 +223,7 @@ export default function App() {
 
           {activeTab === 'universities' && (
             <UniversityNormalization
+              candidates={candidates}
               universities={universities}
               onAddVariant={handleAddUniversityVariant}
             />

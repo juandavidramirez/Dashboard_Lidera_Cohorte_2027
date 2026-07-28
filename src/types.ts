@@ -39,6 +39,34 @@ export interface Candidate {
   month: string; // 'Ene', 'Feb', etc.
   notes?: string;
   referredBy?: string;
+
+  // Campos Fuente adicionales de Data_Raw_Conv (A->U)
+  idPrimeraRevision?: string;
+  fechaCreacion?: string;
+  documentoIdentificacion?: string;
+  nivelEducacion?: string;
+  grupoEtnico?: string;
+  fuenteInformacion?: string;
+  medioInteres?: string;
+  personaRecomendo?: string;
+  fechaNacimiento?: string;
+  responsabilidadFamiliar?: string;
+  monitor?: string;
+  pagoEstudios?: string;
+  ultimaModificacion?: string;
+
+  // Campos Transformados de Data_Raw_Conv (V->AG)
+  stemClass?: string;             // Col V: 'STEM Priorizada' | 'STEM No Priorizada' | 'NO'
+  universidadTop13QS?: string;   // Col W: 'SI' | 'NO'
+  universidadPriorizada?: string;// Col X: 'SI' | 'NO'
+  tipoPregrado?: string;          // Col Y: 'Profesional' | 'Licenciatura' | 'Carrera no plazable' | 'NO'
+  enfoque?: string;               // Col Z: 'STEM y Bilingüe' | 'STEM' | 'Bilingüe' | 'No STEM no Bilingüe'
+  canalConvocatoria?: string;     // Col AA: 'LIDERA en RRSS' | 'Refiere LIDERA' | 'Gira LIDERA' | 'Otros'
+  cumpleMinimos?: string;         // Col AB: 'Cumple mínimos' | 'No cumple mínimos'
+  motivoNoCumplimiento?: string;  // Col AC
+  rutaCalculada?: string;         // Col AD: 'Ruta Promisorios' | 'Ruta General' | 'N/A'
+  edad?: number | string;         // Col AE
+  hpc?: string;                   // Col AG: 'Si' | 'No'
 }
 
 export interface UniversityMapping {
