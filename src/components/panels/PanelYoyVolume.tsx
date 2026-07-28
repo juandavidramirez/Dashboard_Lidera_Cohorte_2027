@@ -22,13 +22,13 @@ interface Props {
 
 export const PanelYoyVolume: React.FC<Props> = ({
   yoyData,
-  total2027 = 885,
-  total2026 = 868,
+  total2027 = 0,
+  total2026 = 0,
   isLoading = false
 }) => {
   const [viewMode, setViewMode] = useState<'line' | 'bar'>('line');
 
-  const diffPct = Math.round(((total2027 - total2026) / total2026) * 1000) / 10;
+  const diffPct = total2026 > 0 ? Math.round(((total2027 - total2026) / total2026) * 1000) / 10 : 0;
 
   if (isLoading) {
     return (

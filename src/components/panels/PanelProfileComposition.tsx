@@ -10,14 +10,14 @@ interface Props {
 }
 
 export const PanelProfileComposition: React.FC<Props> = ({
-  stemCount = 429,
-  bilingualCount = 456,
-  totalEligible = 885,
+  stemCount = 0,
+  bilingualCount = 0,
+  totalEligible = 0,
   isLoading = false
 }) => {
-  const calculatedTotal = stemCount + bilingualCount || totalEligible || 1;
-  const stemPct = Math.round((stemCount / calculatedTotal) * 1000) / 10;
-  const bilingualPct = Math.round((bilingualCount / calculatedTotal) * 1000) / 10;
+  const calculatedTotal = stemCount + bilingualCount || (totalEligible > 0 ? totalEligible : 0);
+  const stemPct = calculatedTotal > 0 ? Math.round((stemCount / calculatedTotal) * 1000) / 10 : 0;
+  const bilingualPct = calculatedTotal > 0 ? Math.round((bilingualCount / calculatedTotal) * 1000) / 10 : 0;
 
   const data = [
     { name: 'Ruta Bilingüe (B2+)', value: bilingualCount, percentage: bilingualPct, color: '#2E9E82' },

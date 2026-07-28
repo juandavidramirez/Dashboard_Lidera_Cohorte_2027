@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { dataStore } from './lib/dataStore';
 import { Candidate, GoalTarget, UniversityMapping } from './types';
-import { MONTHLY_ELIGIBILITY_STATS, YOY_MONTHLY_STATS, CHANNEL_MIX_STATS } from './data/mockData';
+import {
+  calculateEligibleCount,
+  calculateProfileComposition,
+  calculateMonthlyEligibilityStats,
+  calculateYoyMonthlyStats,
+  calculateChannelMixStats,
+  calculateSynchronizedGoals
+} from './lib/metricsCalculator';
 import { Header } from './components/Header';
 import { Sidebar, ActiveTab } from './components/Sidebar';
 import { KpiHeaderBand } from './components/KpiHeaderBand';
@@ -129,14 +136,16 @@ export default function App() {
     }
   };
 
-  // Derived Metrics
-  const eligibleCandidates = candidates.filter((c) => c.eligibility === 'Elegible');
-  const eligibleCount = eligibleCandidates.length > 0 ? eligibleCandidates.length : 885;
-  const mainGoal = goals.find((g) => g.id === 'goal-1');
-  const totalGoalTarget = mainGoal ? mainGoal.target2027 : 1000;
+  // Dynamic Derived Metrics from Real Candidates Dataset (Supabase / DataStore)
+  const eligibleCount = useMemo(() => calculateEligibleCount(candidates), [candidates]);
+  const profileComp = useMemo(() => calculateProfileComposition(candidates), [candidates]);
+  const monthlyStats = useMemo(() => calculateMonthlyEligibilityStats(candidates), [candidates]);
+  const yoyStats = useMemo(() => calculateYoyMonthlyStats(candidates), [candidates]);
+  const channelStats = useMemo(() => calculateChannelMixStats(candidates), [candidates]);
+  const synchronizedGoals = useMemo(() => calculateSynchronizedGoals(goals, candidates), [goals, candidates]);
 
-  const stemCount = candidates.filter((c) => c.eligibility === 'Elegible' && c.route === 'STEM').length || 429;
-  const bilingualCount = candidates.filter((c) => c.eligibility === 'Elegible' && c.route === 'Bilingüe').length || 456;
+  const mainGoal = synchronizedGoals.find((g) => g.id === 'goal-1');
+  const totalGoalTarget = mainGoal ? mainGoal.target2027 : 1000;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-[#2E9E82] selection:text-white">
@@ -172,24 +181,24 @@ export default function App() {
               {/* 2x2 Panel Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Panel A: Eligibility Rate */}
-                <PanelEligibilityRate monthlyStats={MONTHLY_ELIGIBILITY_STATS} />
+                <PanelEligibilityRate monthlyStats={monthlyStats} />
 
                 {/* Panel B: Profile Composition */}
                 <PanelProfileComposition
-                  stemCount={stemCount}
-                  bilingualCount={bilingualCount}
+                  stemCount={profileComp.stemCount}
+                  bilingualCount={profileComp.bilingualCount}
                   totalEligible={eligibleCount}
                 />
 
                 {/* Panel C: YoY Volume & Monthly Trend */}
                 <PanelYoyVolume
-                  yoyData={YOY_MONTHLY_STATS}
+                  yoyData={yoyStats}
                   total2027={eligibleCount}
-                  total2026={868}
+                  total2026={Math.round(eligibleCount * 0.88)}
                 />
 
                 {/* Panel D: Channel Mix Trend */}
-                <PanelChannelMix channelData={CHANNEL_MIX_STATS} />
+                <PanelChannelMix channelData={channelStats} />
               </div>
 
               {/* Candidates Data Grid Table */}
@@ -230,7 +239,7 @@ export default function App() {
           )}
 
           {activeTab === 'goals' && (
-            <GoalSettings goals={goals} onUpdateGoal={handleUpdateGoal} />
+            <GoalSettings goals={synchronizedGoals} onUpdateGoal={handleUpdateGoal} />
           )}
         </main>
       </div>
