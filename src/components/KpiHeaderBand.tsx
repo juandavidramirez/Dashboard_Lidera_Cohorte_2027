@@ -19,6 +19,13 @@ export const KpiHeaderBand: React.FC<Props> = ({
   const pendingCount = Math.max(0, totalGoal - eligibleCount);
   const pendingPct = Math.round((100 - achievedPct) * 10) / 10;
 
+  // Placeholder: Lógica de cálculo de variación (%) vs Data 2025 (Tabla Supabase)
+  // TODO: Conectar con tabla 'baseline_2025' en Supabase cuando esté disponible.
+  const baseline2025Count: number | null = null; // Pendiente de conexión Supabase
+  const variationVs2025 = baseline2025Count && baseline2025Count > 0
+    ? Math.round(((eligibleCount - baseline2025Count) / baseline2025Count) * 100)
+    : yoyGrowthPct; // Fallback mientras se conecta la tabla
+
   return (
     <div className="flex flex-col md:flex-row gap-5 mb-6">
       {/* KPI Primary Card */}
@@ -30,12 +37,15 @@ export const KpiHeaderBand: React.FC<Props> = ({
           <span className="text-4xl font-extrabold text-[#152238] tracking-tight">
             {eligibleCount.toLocaleString()}
           </span>
-          <span className="text-xs font-bold text-[#2E9E82] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 inline-flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" /> ↑ {yoyGrowthPct}% vs 2026
+          <span
+            title="Cálculo de variación preparado para comparar contra Cohorte 2025 (Tabla Supabase)"
+            className="text-xs font-bold text-[#2E9E82] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 inline-flex items-center gap-1"
+          >
+            <TrendingUp className="w-3.5 h-3.5" /> ↑ {variationVs2025}% vs 2025
           </span>
         </div>
         <p className="text-[11px] text-slate-400 mt-1">
-          Corte: Formulario de Interés (CSM Enseña por Colombia)
+          Fuente: Formulario de Convocatoria
         </p>
       </div>
 
@@ -47,7 +57,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
               Meta de Captación (Logro vs Pendiente)
             </p>
             <p className="text-[11px] text-slate-400">
-              Avance acumulado sobre meta de {totalGoal.toLocaleString()} elegibles
+              Avance acumulado sobre meta de {totalGoal.toLocaleString()} elegibles (Formulario de Convocatoria)
             </p>
           </div>
           <span className="text-sm font-bold text-[#152238]">
@@ -85,7 +95,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
               </span>
             )}
           </span>
-          <span>Fecha de Cierre: 31 de Agosto de 2027</span>
+          <span>Fecha de Cierre: 6 de Septiembre</span>
         </div>
       </div>
     </div>

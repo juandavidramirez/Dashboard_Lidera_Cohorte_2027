@@ -8,15 +8,16 @@ import {
   Tooltip,
   CartesianGrid
 } from 'recharts';
-import { ChannelMixMonthlyStat } from '../../types';
-import { Share2, Compass, Users, Sparkles } from 'lucide-react';
+import { ChannelMixMonthlyStat, WeeklyChannelMixStat } from '../../types';
+import { Share2, Compass, Users } from 'lucide-react';
 
 interface Props {
-  channelData: ChannelMixMonthlyStat[];
+  channelData?: ChannelMixMonthlyStat[];
+  weeklyData?: WeeklyChannelMixStat[];
   isLoading?: boolean;
 }
 
-export const PanelChannelMix: React.FC<Props> = ({ channelData, isLoading = false }) => {
+export const PanelChannelMix: React.FC<Props> = ({ channelData = [], weeklyData = [], isLoading = false }) => {
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-2xs animate-pulse">
@@ -26,12 +27,21 @@ export const PanelChannelMix: React.FC<Props> = ({ channelData, isLoading = fals
     );
   }
 
+  const rawData = (weeklyData && weeklyData.length > 0) ? weeklyData : channelData;
+  const chartData = rawData.map((item: any) => ({
+    name: item.weekKey || item.label || item.month || 'Semana',
+    subLabel: item.dateRange || '',
+    refiere: item.refiere || 0,
+    rrss: item.rrss || 0,
+    gira: item.gira || 0
+  }));
+
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-2xs h-full">
       {/* Title Strip in Amber #F2A900 */}
       <div className="bg-[#F2A900] px-4 py-2">
         <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-          Panel D — Tendencia de Mezcla por Canal (100% Apilado)
+          Panel D — Mezcla por Canal de Atracción (Vista Semanal)
         </h2>
       </div>
 
@@ -40,10 +50,10 @@ export const PanelChannelMix: React.FC<Props> = ({ channelData, isLoading = fals
           <div className="flex items-center justify-between mb-2 border-b border-slate-100 pb-1.5">
             <div>
               <h3 className="text-xs font-bold text-[#152238]">
-                Distribución Porcentual Mensual por Canal
+                Distribución Semanal por Canal de Captación
               </h3>
               <p className="text-[11px] text-slate-500">
-                Monitoreo de estrategia de atracción y difusión de prospectos
+                Evolución de canales (Semana 0 a Semana 6 Cierre)
               </p>
             </div>
           </div>
@@ -68,12 +78,16 @@ export const PanelChannelMix: React.FC<Props> = ({ channelData, isLoading = fals
         {/* 100% Stacked Bar Chart */}
         <div className="h-44 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={channelData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
               <Tooltip
                 formatter={(val: number, name: string) => [`${val}%`, name]}
+                labelFormatter={(label: string, payload: any[]) => {
+                  const sub = payload?.[0]?.payload?.subLabel;
+                  return sub ? `${label} (${sub})` : label;
+                }}
                 contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
               />
               <Bar dataKey="refiere" name="Refiere LIDERA" stackId="a" fill="#152238" />
@@ -84,8 +98,8 @@ export const PanelChannelMix: React.FC<Props> = ({ channelData, isLoading = fals
         </div>
 
         <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400">
-          <span>Fuente: Formulario Google Sheets 2027</span>
-          <span className="font-semibold text-slate-700">Mayor tasa de elegibles: Refiere LIDERA</span>
+          <span>Fuente: Formulario de Convocatoria Corte 2027</span>
+          <span className="font-semibold text-slate-700">Mayor tasa de conversión: Refiere LIDERA</span>
         </div>
       </div>
     </div>

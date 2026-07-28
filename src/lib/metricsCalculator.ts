@@ -2,11 +2,49 @@ import {
   Candidate,
   GoalTarget,
   MonthlyEligibilityStat,
+  WeeklyEligibilityStat,
+  WeeklyChannelMixStat,
   YoyMonthlyStat,
   ChannelMixMonthlyStat
 } from '../types';
+import { INITIAL_GOAL_TARGETS } from '../data/mockData';
 
 const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+export const WEEK_DEFINITIONS = [
+  { key: 'Semana 0', range: 'Acumulado hasta 27 jul (Pre-lanzamiento)' },
+  { key: 'Semana 1', range: '28 jul – 2 ago' },
+  { key: 'Semana 2', range: '3 ago – 9 ago' },
+  { key: 'Semana 3', range: '10 ago – 16 ago' },
+  { key: 'Semana 4', range: '17 ago – 23 ago' },
+  { key: 'Semana 5', range: '24 ago – 30 ago' },
+  { key: 'Semana 6', range: '31 ago – 6 sept (cierre)' }
+];
+
+export function getCandidateWeekKey(cand: Candidate, index: number): string {
+  const dateStr = cand.registrationDate || cand.fechaCreacion;
+  if (dateStr) {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const month = d.getMonth(); // 0-indexed (6=Jul, 7=Aug, 8=Sep)
+      const date = d.getDate();
+      if (month < 6 || (month === 6 && date < 28)) return 'Semana 0';
+      if (month === 6 && date >= 28) return 'Semana 1';
+      if (month === 7) {
+        if (date <= 2) return 'Semana 1';
+        if (date <= 9) return 'Semana 2';
+        if (date <= 16) return 'Semana 3';
+        if (date <= 23) return 'Semana 4';
+        if (date <= 30) return 'Semana 5';
+        return 'Semana 6';
+      }
+      if (month >= 8) return 'Semana 6';
+    }
+  }
+  // Fallback evenly distributed across 7 weeks
+  const weekIdx = index % 7;
+  return WEEK_DEFINITIONS[weekIdx].key;
+}
 
 // Normalize month string from candidate
 export function getCandidateMonth(cand: Candidate): string {
@@ -66,26 +104,24 @@ export function calculateEligibleCount(candidates: Candidate[]): number {
   return candidates.filter(isCandidateEligible).length;
 }
 
-// Calculate Profile Composition
+// Calculate Profile Composition (Mutually exclusive assignment)
 export function calculateProfileComposition(candidates: Candidate[]) {
   const eligible = candidates.filter(isCandidateEligible);
   const totalEligible = eligible.length;
 
-  let stemCount = 0;
-  let bilingualCount = 0;
+  let pureStemCount = 0;
+  let pureBilingualCount = 0;
   let stemAndBilingualCount = 0;
   let generalCount = 0;
 
   eligible.forEach((c) => {
     const route = getCandidateRoute(c);
     if (route === 'STEM y Bilingüe') {
-      stemCount++;
-      bilingualCount++;
       stemAndBilingualCount++;
     } else if (route === 'STEM') {
-      stemCount++;
+      pureStemCount++;
     } else if (route === 'Bilingüe') {
-      bilingualCount++;
+      pureBilingualCount++;
     } else {
       generalCount++;
     }
@@ -93,8 +129,10 @@ export function calculateProfileComposition(candidates: Candidate[]) {
 
   return {
     totalEligible,
-    stemCount,
-    bilingualCount,
+    stemCount: pureStemCount + stemAndBilingualCount,
+    bilingualCount: pureBilingualCount + stemAndBilingualCount,
+    pureStemCount,
+    pureBilingualCount,
     stemAndBilingualCount,
     generalCount
   };
@@ -190,17 +228,72 @@ export function calculateYoyMonthlyStats(candidates: Candidate[]): YoyMonthlySta
   });
 }
 
-// Calculate Channel Mix Stats (100% stacked)
-export function calculateChannelMixStats(candidates: Candidate[]): ChannelMixMonthlyStat[] {
-  const map = new Map<string, { rrss: number; gira: number; refiere: number; otros: number }>();
+// Calculate Weekly Eligibility Stats (Fixed ranges: Sem 1 to Sem 6)
+export function calculateWeeklyEligibilityStats(candidates: Candidate[]): WeeklyEligibilityStat[] {
+  const map = new Map<string, {
+    eligible: number;
+    notEligible: number;
+    reasonEnfoque: number;
+    reasonGpa: number;
+    reasonOther: number;
+  }>();
 
-  MONTH_NAMES.forEach(m => {
-    map.set(m, { rrss: 0, gira: 0, refiere: 0, otros: 0 });
+  WEEK_DEFINITIONS.forEach(w => {
+    map.set(w.key, { eligible: 0, notEligible: 0, reasonEnfoque: 0, reasonGpa: 0, reasonOther: 0 });
   });
 
-  candidates.forEach(c => {
-    const m = getCandidateMonth(c);
-    const item = map.get(m) || { rrss: 0, gira: 0, refiere: 0, otros: 0 };
+  candidates.forEach((c, idx) => {
+    const wKey = getCandidateWeekKey(c, idx);
+    const item = map.get(wKey) || { eligible: 0, notEligible: 0, reasonEnfoque: 0, reasonGpa: 0, reasonOther: 0 };
+
+    const eligible = isCandidateEligible(c);
+    if (eligible) {
+      item.eligible += 1;
+    } else {
+      item.notEligible += 1;
+      const reason = (c.ineligibilityReason || c.motivoNoCumplimiento || '').toLowerCase();
+      if (reason.includes('enfoque') || reason.includes('stem') || reason.includes('bilingüe') || reason.includes('inglés')) {
+        item.reasonEnfoque += 1;
+      } else if (reason.includes('promedio') || reason.includes('gpa') || reason.includes('3.5')) {
+        item.reasonGpa += 1;
+      } else {
+        item.reasonOther += 1;
+      }
+    }
+    map.set(wKey, item);
+  });
+
+  return WEEK_DEFINITIONS.map(w => {
+    const item = map.get(w.key)!;
+    const total = item.eligible + item.notEligible;
+    const rate = total > 0 ? Math.round((item.eligible / total) * 1000) / 10 : 0;
+
+    return {
+      weekKey: w.key,
+      label: w.key,
+      dateRange: w.range,
+      eligibleCount: item.eligible,
+      notEligibleCount: item.notEligible,
+      total,
+      eligibilityRate: rate,
+      ineligibleReasonEnfoque: item.reasonEnfoque,
+      ineligibleReasonGpa: item.reasonGpa,
+      ineligibleReasonOther: item.reasonOther
+    };
+  });
+}
+
+// Calculate Weekly Channel Mix Stats (100% stacked)
+export function calculateWeeklyChannelMixStats(candidates: Candidate[]): WeeklyChannelMixStat[] {
+  const map = new Map<string, { rrss: number; gira: number; refiere: number; otros: number }>();
+
+  WEEK_DEFINITIONS.forEach(w => {
+    map.set(w.key, { rrss: 0, gira: 0, refiere: 0, otros: 0 });
+  });
+
+  candidates.forEach((c, idx) => {
+    const wKey = getCandidateWeekKey(c, idx);
+    const item = map.get(wKey) || { rrss: 0, gira: 0, refiere: 0, otros: 0 };
     const ch = (c.channel || c.fuenteInformacion || c.canalConvocatoria || '').toLowerCase();
 
     if (ch.includes('refiere') || ch.includes('recomend') || ch.includes('persona')) {
@@ -212,17 +305,24 @@ export function calculateChannelMixStats(candidates: Candidate[]): ChannelMixMon
     } else {
       item.otros += 1;
     }
-    map.set(m, item);
+    map.set(wKey, item);
   });
 
-  const months = calculateMonthlyEligibilityStats(candidates).map(s => s.month);
-
-  return months.map(m => {
-    const counts = map.get(m) || { rrss: 0, gira: 0, refiere: 0, otros: 0 };
+  return WEEK_DEFINITIONS.map(w => {
+    const counts = map.get(w.key) || { rrss: 0, gira: 0, refiere: 0, otros: 0 };
     const total = counts.rrss + counts.gira + counts.refiere + counts.otros;
 
     if (total === 0) {
-      return { month: m, rrss: 48, gira: 32, refiere: 20, total: 100 };
+      return {
+        weekKey: w.key,
+        label: w.key,
+        dateRange: w.range,
+        rrss: 48,
+        gira: 32,
+        refiere: 20,
+        otros: 0,
+        total: 100
+      };
     }
 
     const rrssPct = Math.round((counts.rrss / total) * 100);
@@ -230,10 +330,13 @@ export function calculateChannelMixStats(candidates: Candidate[]): ChannelMixMon
     const refierePct = 100 - rrssPct - giraPct;
 
     return {
-      month: m,
+      weekKey: w.key,
+      label: w.key,
+      dateRange: w.range,
       rrss: rrssPct,
       gira: giraPct,
       refiere: refierePct,
+      otros: 0,
       total: 100
     };
   });
@@ -241,6 +344,7 @@ export function calculateChannelMixStats(candidates: Candidate[]): ChannelMixMon
 
 // Calculate goals progress dynamically based on candidates dataset
 export function calculateSynchronizedGoals(goals: GoalTarget[], candidates: Candidate[]): GoalTarget[] {
+  const baseGoals = (goals && goals.length >= 5) ? goals : INITIAL_GOAL_TARGETS;
   const eligibleCount = calculateEligibleCount(candidates);
   const totalCount = candidates.length;
   const profileComp = calculateProfileComposition(candidates);
@@ -257,7 +361,7 @@ export function calculateSynchronizedGoals(goals: GoalTarget[], candidates: Cand
     (c.channel || c.fuenteInformacion || '').toLowerCase().includes('refiere')
   ).length;
 
-  return goals.map(g => {
+  return baseGoals.map(g => {
     let currentVal = g.current2027;
 
     if (g.id === 'goal-1') {
@@ -285,3 +389,6 @@ export function calculateSynchronizedGoals(goals: GoalTarget[], candidates: Cand
     };
   });
 }
+
+export const calculateChannelMixStats = calculateWeeklyChannelMixStats;
+

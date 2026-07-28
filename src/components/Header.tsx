@@ -49,11 +49,8 @@ export const Header: React.FC<Props> = ({
             E
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-tight hidden sm:inline">
-              Embudo de Convocatoria /
-            </span>
             <h1 className="text-sm font-bold text-[#152238] tracking-tight">
-              Difusión e Interés LIDERA
+              BI Dash Funnel Convocatoria Lidera
             </h1>
             <span className="bg-[#2E9E82] text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
               Cohorte 2027

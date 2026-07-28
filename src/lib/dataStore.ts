@@ -173,7 +173,16 @@ class DataStore {
       this.candidates = storedCand ? JSON.parse(storedCand) : INITIAL_CANDIDATES;
 
       const storedGoals = localStorage.getItem(STORAGE_KEYS.GOALS);
-      this.goals = storedGoals ? JSON.parse(storedGoals) : INITIAL_GOAL_TARGETS;
+      if (storedGoals) {
+        const parsed = JSON.parse(storedGoals);
+        if (Array.isArray(parsed) && parsed.length >= 5) {
+          this.goals = parsed;
+        } else {
+          this.goals = INITIAL_GOAL_TARGETS;
+        }
+      } else {
+        this.goals = INITIAL_GOAL_TARGETS;
+      }
 
       const storedUnis = localStorage.getItem(STORAGE_KEYS.UNIVERSITIES);
       this.universities = storedUnis ? JSON.parse(storedUnis) : INITIAL_UNIVERSITY_MAPPINGS;

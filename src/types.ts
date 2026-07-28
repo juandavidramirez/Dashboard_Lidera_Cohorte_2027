@@ -6,7 +6,17 @@ export type RecruitmentChannel =
   | 'LIDERA en RRSS' 
   | 'Gira LIDERA' 
   | 'Refiere LIDERA' 
+  | 'Cultivación de HPC'
   | 'Otros';
+
+export interface AuditLogItem {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  details: string;
+  type?: 'create' | 'update' | 'sync' | 'export' | 'delete' | string;
+}
 
 export type IneligibilityReason = 
   | 'Enfoque (No STEM / No Bilingüe B2+)'
@@ -90,6 +100,30 @@ export interface MonthlyEligibilityStat {
   ineligibleReasonEnfoque: number;
   ineligibleReasonGpa: number;
   ineligibleReasonOther: number;
+}
+
+export interface WeeklyEligibilityStat {
+  weekKey: string; // 'Semana 1', 'Semana 2', etc.
+  label: string;   // '28 jul – 2 ago'
+  dateRange: string;
+  eligibleCount: number;
+  notEligibleCount: number;
+  total: number;
+  eligibilityRate: number;
+  ineligibleReasonEnfoque: number;
+  ineligibleReasonGpa: number;
+  ineligibleReasonOther: number;
+}
+
+export interface WeeklyChannelMixStat {
+  weekKey: string;
+  label: string;
+  dateRange: string;
+  rrss: number;
+  gira: number;
+  refiere: number;
+  otros: number;
+  total: number;
 }
 
 export interface YoyMonthlyStat {

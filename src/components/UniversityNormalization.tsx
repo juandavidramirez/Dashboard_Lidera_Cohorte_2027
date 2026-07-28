@@ -126,53 +126,6 @@ export const UniversityNormalization: React.FC<Props> = ({ candidates = [] }) =>
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Top KPI Cards Band */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Universidades Representadas</p>
-            <p className="text-2xl font-extrabold text-[#152238] mt-1 font-mono">{universityStats.length}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Instituciones registradas</p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-            <Building2 className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Postulantes Totales</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1 font-mono">{globalApplicants}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Volumen global</p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Postulantes Elegibles</p>
-            <p className="text-2xl font-extrabold text-[#2E9E82] mt-1 font-mono">{globalEligible}</p>
-            <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Cumplen mínimos LIDERA</p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-[#2E9E82] flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tasa de Conversión Promedio</p>
-            <p className="text-2xl font-extrabold text-purple-900 mt-1 font-mono">{globalConversionPct.toFixed(1)}%</p>
-            <p className="text-[10px] text-purple-700 font-semibold mt-0.5">{prioritizedApplicants} de Univ. Priorizadas</p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
-            <Award className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
-
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {/* Banner Title */}

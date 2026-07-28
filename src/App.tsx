@@ -16,9 +16,12 @@ import { PanelEligibilityRate } from './components/panels/PanelEligibilityRate';
 import { PanelProfileComposition } from './components/panels/PanelProfileComposition';
 import { PanelYoyVolume } from './components/panels/PanelYoyVolume';
 import { PanelChannelMix } from './components/panels/PanelChannelMix';
+import { PanelAcademicProfile } from './components/panels/PanelAcademicProfile';
+import { PanelUniversitiesDistribution } from './components/panels/PanelUniversitiesDistribution';
 import { CandidateTable } from './components/CandidateTable';
 import { CandidateDetailModal } from './components/CandidateDetailModal';
 import { UniversityNormalization } from './components/UniversityNormalization';
+import { UniversityModuleScorecards } from './components/UniversityModuleScorecards';
 import { GoalSettings } from './components/GoalSettings';
 import { ToastContainer, ToastMessage } from './components/Toast';
 
@@ -185,8 +188,10 @@ export default function App() {
 
                 {/* Panel B: Profile Composition */}
                 <PanelProfileComposition
-                  stemCount={profileComp.stemCount}
-                  bilingualCount={profileComp.bilingualCount}
+                  pureStemCount={profileComp.pureStemCount}
+                  pureBilingualCount={profileComp.pureBilingualCount}
+                  stemAndBilingualCount={profileComp.stemAndBilingualCount}
+                  generalCount={profileComp.generalCount}
                   totalEligible={eligibleCount}
                 />
 
@@ -201,17 +206,11 @@ export default function App() {
                 <PanelChannelMix channelData={channelStats} />
               </div>
 
-              {/* Candidates Data Grid Table */}
-              <CandidateTable
-                candidates={candidates}
-                onUpdateCandidate={handleUpdateCandidate}
-                onDeleteCandidate={handleDeleteCandidate}
-                onBatchAction={handleBatchAction}
-                onSelectCandidate={(cand) => {
-                  setSelectedCandidate(cand);
-                  setIsDetailModalOpen(true);
-                }}
-              />
+              {/* Perfil Académico (Nivel de Inglés + Tipo de Pregrado) */}
+              <PanelAcademicProfile candidates={candidates} />
+
+              {/* Distribución Universidades (Geografía + Top 10 + Resumen Conversión) */}
+              <PanelUniversitiesDistribution candidates={candidates} universityMappings={universities} />
             </div>
           )}
 
@@ -231,11 +230,17 @@ export default function App() {
           )}
 
           {activeTab === 'universities' && (
-            <UniversityNormalization
-              candidates={candidates}
-              universities={universities}
-              onAddVariant={handleAddUniversityVariant}
-            />
+            <div className="space-y-6">
+              {/* 4 Scorecards for Universities Module */}
+              <UniversityModuleScorecards candidates={candidates} />
+
+              {/* Normalización de Universidades */}
+              <UniversityNormalization
+                candidates={candidates}
+                universities={universities}
+                onAddVariant={handleAddUniversityVariant}
+              />
+            </div>
           )}
 
           {activeTab === 'goals' && (

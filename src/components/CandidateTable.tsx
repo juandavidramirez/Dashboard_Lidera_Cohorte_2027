@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Candidate, FilterState } from '../types';
+import { Candidate } from '../types';
+import { isCandidateEligible, getCandidateRoute } from '../lib/metricsCalculator';
 import {
   Search,
   Filter,
@@ -9,42 +10,35 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Edit2,
-  Trash2,
   Sparkles,
   SlidersHorizontal,
-  Mail,
-  UserCheck,
-  Building2,
   GraduationCap,
-  Calendar,
-  AlertCircle
+  AlertCircle,
+  UserCheck
 } from 'lucide-react';
 
 interface Props {
   candidates: Candidate[];
   onUpdateCandidate: (id: string, updates: Partial<Candidate>) => void;
-  onDeleteCandidate: (id: string) => void;
+  onDeleteCandidate?: (id: string) => void;
   onBatchAction: (ids: string[], action: 'set_eligible' | 'set_not_eligible' | 'flag_hpc') => void;
   onSelectCandidate: (candidate: Candidate) => void;
 }
 
 export const CandidateTable: React.FC<Props> = ({
   candidates,
-  onUpdateCandidate,
-  onDeleteCandidate,
   onBatchAction,
   onSelectCandidate
 }) => {
-  // Filters State
-  const [filters, setFilters] = useState<FilterState>({
+  // Extended Filters State (Univ, Career, HPC replacing Department)
+  const [filters, setFilters] = useState({
     search: '',
     eligibility: 'ALL',
     route: 'ALL',
     channel: 'ALL',
-    department: 'ALL',
-    ineligibilityReason: 'ALL',
-    dateRange: { start: '', end: '' }
+    university: 'ALL',
+    career: 'ALL',
+    hpc: 'ALL'
   });
 
   // Sorting & Pagination
@@ -61,6 +55,7 @@ export const CandidateTable: React.FC<Props> = ({
     candidate: true,
     university: true,
     route: true,
+    hpc: true,
     channel: true,
     gpa: true,
     eligibility: true,
@@ -71,6 +66,24 @@ export const CandidateTable: React.FC<Props> = ({
 
   const [showColumnDropdown, setShowColumnDropdown] = useState(false);
 
+  // Derive unique lists for dropdowns
+  const uniqueUniversities = useMemo(() => {
+    const set = new Set<string>();
+    candidates.forEach((c) => {
+      const u = c.universityNormalized || c.universityRaw;
+      if (u) set.add(u);
+    });
+    return Array.from(set).sort();
+  }, [candidates]);
+
+  const uniqueCareers = useMemo(() => {
+    const set = new Set<string>();
+    candidates.forEach((c) => {
+      if (c.career) set.add(c.career);
+    });
+    return Array.from(set).sort();
+  }, [candidates]);
+
   // Filtered & Sorted candidates computation
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
@@ -80,21 +93,24 @@ export const CandidateTable: React.FC<Props> = ({
         const matches =
           c.fullName.toLowerCase().includes(q) ||
           c.email.toLowerCase().includes(q) ||
-          c.universityNormalized.toLowerCase().includes(q) ||
-          c.universityRaw.toLowerCase().includes(q) ||
-          c.career.toLowerCase().includes(q) ||
-          c.department.toLowerCase().includes(q);
+          (c.universityNormalized || '').toLowerCase().includes(q) ||
+          (c.universityRaw || '').toLowerCase().includes(q) ||
+          (c.career || '').toLowerCase().includes(q);
         if (!matches) return false;
       }
 
-      // Eligibility
-      if (filters.eligibility !== 'ALL' && c.eligibility !== filters.eligibility) {
-        return false;
-      }
+      // Eligibility using isCandidateEligible helper
+      const isElig = isCandidateEligible(c);
+      if (filters.eligibility === 'Elegible' && !isElig) return false;
+      if (filters.eligibility === 'No Elegible' && isElig) return false;
 
       // Route
-      if (filters.route !== 'ALL' && c.route !== filters.route) {
-        return false;
+      if (filters.route !== 'ALL') {
+        const candRoute = getCandidateRoute(c);
+        if (filters.route === 'STEM' && candRoute !== 'STEM') return false;
+        if (filters.route === 'Bilingüe' && candRoute !== 'Bilingüe') return false;
+        if ((filters.route === 'STEM y Bilingüe' || filters.route === 'Bilingüe y STEM') && candRoute !== 'STEM y Bilingüe') return false;
+        if (filters.route === 'General / No Priorizado' && candRoute !== 'General / No Priorizado') return false;
       }
 
       // Channel
@@ -102,17 +118,22 @@ export const CandidateTable: React.FC<Props> = ({
         return false;
       }
 
-      // Department
-      if (filters.department !== 'ALL' && c.department !== filters.department) {
+      // University
+      if (filters.university !== 'ALL') {
+        const u = c.universityNormalized || c.universityRaw;
+        if (u !== filters.university) return false;
+      }
+
+      // Career
+      if (filters.career !== 'ALL' && c.career !== filters.career) {
         return false;
       }
 
-      // Reason
-      if (
-        filters.ineligibilityReason !== 'ALL' &&
-        c.ineligibilityReason !== filters.ineligibilityReason
-      ) {
-        return false;
+      // HPC Filter
+      if (filters.hpc !== 'ALL') {
+        const isHpc = (c.hpc || '').toLowerCase() === 'si' || c.channel === 'Cultivación de HPC';
+        if (filters.hpc === 'SI' && !isHpc) return false;
+        if (filters.hpc === 'NO' && isHpc) return false;
       }
 
       return true;
@@ -157,44 +178,43 @@ export const CandidateTable: React.FC<Props> = ({
     );
   };
 
-  // Bulk actions
+  // Export CSV
   const exportToCSV = () => {
-    const toExport = candidates.filter((c) => selectedIds.includes(c.id));
-    const items = toExport.length > 0 ? toExport : filteredCandidates;
+    const dataToExport = selectedIds.length > 0
+      ? candidates.filter((c) => selectedIds.includes(c.id))
+      : filteredCandidates;
 
     const headers = [
       'ID',
-      'Nombre Completo',
+      'Nombre',
       'Correo',
-      'Teléfono',
-      'Universidad Normalizada',
+      'Telefono',
+      'Universidad',
       'Carrera',
-      'Año Graduación',
-      'Promedio GPA',
-      'Inglés B2+',
-      'STEM',
+      'GPA',
+      'Ingles',
       'Ruta',
-      'Canal',
+      'HPC',
       'Elegibilidad',
-      'Motivo Inelegibilidad',
-      'Fecha Registro'
+      'Motivo',
+      'Canal',
+      'Fecha'
     ];
 
-    const rows = items.map((c) => [
+    const rows = dataToExport.map((c) => [
       c.id,
-      `"${c.fullName}"`,
-      `"${c.email}"`,
-      `"${c.phone}"`,
-      `"${c.universityNormalized}"`,
-      `"${c.career}"`,
-      c.graduationYear,
+      `"${c.fullName.replace(/"/g, '""')}"`,
+      c.email,
+      c.phone,
+      `"${(c.universityNormalized || c.universityRaw).replace(/"/g, '""')}"`,
+      `"${(c.career || '').replace(/"/g, '""')}"`,
       c.gpa,
-      c.isBilingual ? 'Sí' : 'No',
-      c.isStem ? 'Sí' : 'No',
-      `"${c.route}"`,
-      `"${c.channel}"`,
-      `"${c.eligibility}"`,
-      `"${c.ineligibilityReason}"`,
+      c.englishLevel,
+      c.route,
+      c.hpc || 'No',
+      isCandidateEligible(c) ? 'Elegible' : 'No Elegible',
+      `"${(c.ineligibilityReason || '').replace(/"/g, '""')}"`,
+      c.channel,
       c.registrationDate
     ]);
 
@@ -205,10 +225,7 @@ export const CandidateTable: React.FC<Props> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `Formulario_Interes_LIDERA_2027_${new Date().toISOString().substring(0, 10)}.csv`
-    );
+    link.setAttribute('download', `Postulantes_Convocatoria_Lidera_2027.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -223,10 +240,10 @@ export const CandidateTable: React.FC<Props> = ({
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-[#2E9E82]" />
-            Registros del Formulario de Interés (LIDERA Cohorte 2027)
+            Registros del Formulario de Convocatoria LIDERA (Cohorte 2027)
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Mostrando {filteredCandidates.length} de {candidates.length} postulantes pre-registrados
+            Registros del Formulario de Convocatoria LIDERA — Cohorte 2027 — Mostrando {filteredCandidates.length} de {candidates.length} candidatos registrados
           </p>
         </div>
 
@@ -323,47 +340,46 @@ export const CandidateTable: React.FC<Props> = ({
               }}
               className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E9E82] text-slate-700 font-medium"
             >
-              <option value="ALL">Ruta: Todas</option>
+              <option value="ALL">Ruta: Todas las Rutas</option>
               <option value="STEM">Ruta STEM</option>
               <option value="Bilingüe">Ruta Bilingüe</option>
+              <option value="STEM y Bilingüe">Ruta Bilingüe y STEM</option>
               <option value="General / No Priorizado">General / No Priorizado</option>
             </select>
           </div>
 
-          {/* Channel Filter */}
+          {/* University Filter */}
           <div>
             <select
-              value={filters.channel}
+              value={filters.university}
               onChange={(e) => {
-                setFilters((prev) => ({ ...prev, channel: e.target.value }));
+                setFilters((prev) => ({ ...prev, university: e.target.value }));
                 setCurrentPage(1);
               }}
               className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E9E82] text-slate-700 font-medium"
             >
-              <option value="ALL">Canal: Todos</option>
-              <option value="LIDERA en RRSS">LIDERA en RRSS</option>
-              <option value="Gira LIDERA">Gira LIDERA</option>
-              <option value="Refiere LIDERA">Refiere LIDERA</option>
-              <option value="Cultivación de HPC">Cultivación de HPC</option>
+              <option value="ALL">Universidad: Todas</option>
+              {uniqueUniversities.map((uni) => (
+                <option key={uni} value={uni}>
+                  {uni.length > 25 ? uni.substring(0, 23) + '...' : uni}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Department Filter */}
+          {/* HPC Filter */}
           <div>
             <select
-              value={filters.department}
+              value={filters.hpc}
               onChange={(e) => {
-                setFilters((prev) => ({ ...prev, department: e.target.value }));
+                setFilters((prev) => ({ ...prev, hpc: e.target.value }));
                 setCurrentPage(1);
               }}
               className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E9E82] text-slate-700 font-medium"
             >
-              <option value="ALL">Departamento: Todos</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
+              <option value="ALL">HPC: Todos</option>
+              <option value="SI">Es HPC (Sí)</option>
+              <option value="NO">No es HPC</option>
             </select>
           </div>
         </div>
@@ -373,7 +389,8 @@ export const CandidateTable: React.FC<Props> = ({
           filters.eligibility !== 'ALL' ||
           filters.route !== 'ALL' ||
           filters.channel !== 'ALL' ||
-          filters.department !== 'ALL') && (
+          filters.university !== 'ALL' ||
+          filters.hpc !== 'ALL') && (
           <div className="flex items-center gap-2 text-xs pt-1 border-t border-slate-100">
             <span className="font-semibold text-slate-500">Filtros activos:</span>
             <button
@@ -383,9 +400,9 @@ export const CandidateTable: React.FC<Props> = ({
                   eligibility: 'ALL',
                   route: 'ALL',
                   channel: 'ALL',
-                  department: 'ALL',
-                  ineligibilityReason: 'ALL',
-                  dateRange: { start: '', end: '' }
+                  university: 'ALL',
+                  career: 'ALL',
+                  hpc: 'ALL'
                 });
                 setCurrentPage(1);
               }}
@@ -402,38 +419,17 @@ export const CandidateTable: React.FC<Props> = ({
         <div className="bg-[#152238] text-white p-3 px-4 flex items-center justify-between animate-fadeIn transition-all">
           <div className="flex items-center gap-3 text-xs font-semibold">
             <span className="bg-white/20 px-2 py-0.5 rounded text-white font-mono">
-              {selectedIds.length} seleccionados
+              {selectedIds.length} candidatos seleccionados
             </span>
-            <span>Acciones masivas disponibles:</span>
+            <span>Acciones disponibles:</span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onBatchAction(selectedIds, 'set_eligible')}
-              className="bg-[#2E9E82] hover:bg-[#2E9E82]/90 text-white text-xs font-bold px-3 py-1 rounded shadow-xs transition-colors flex items-center gap-1"
-            >
-              <CheckSquare className="w-3.5 h-3.5" /> Marcar Elegibles
-            </button>
-
-            <button
-              onClick={() => onBatchAction(selectedIds, 'set_not_eligible')}
-              className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded transition-colors flex items-center gap-1"
-            >
-              <XSquare className="w-3.5 h-3.5" /> Marcar No Elegibles
-            </button>
-
-            <button
-              onClick={() => onBatchAction(selectedIds, 'flag_hpc')}
-              className="bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded transition-colors flex items-center gap-1"
-            >
-              <Sparkles className="w-3.5 h-3.5" /> Mover a Cultivación HPC
-            </button>
-
-            <button
               onClick={exportToCSV}
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-bold px-3 py-1 rounded transition-colors flex items-center gap-1"
+              className="bg-[#2E9E82] hover:bg-[#2E9E82]/90 text-white text-xs font-bold px-3 py-1.5 rounded shadow-xs transition-colors flex items-center gap-1.5"
             >
-              <Download className="w-3.5 h-3.5" /> Exportar Selección
+              <Download className="w-3.5 h-3.5" /> Exportar Selección (CSV)
             </button>
           </div>
         </div>
@@ -481,6 +477,7 @@ export const CandidateTable: React.FC<Props> = ({
               )}
 
               {visibleColumns.route && <th className="p-3">Ruta Priorizada</th>}
+              {visibleColumns.hpc && <th className="p-3 text-center">HPC</th>}
               {visibleColumns.channel && <th className="p-3">Canal</th>}
 
               {visibleColumns.gpa && (
@@ -517,7 +514,7 @@ export const CandidateTable: React.FC<Props> = ({
           <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
             {paginatedCandidates.length === 0 ? (
               <tr>
-                <td colSpan={10} className="p-8 text-center text-slate-500 bg-slate-50">
+                <td colSpan={11} className="p-8 text-center text-slate-500 bg-slate-50">
                   <AlertCircle className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                   <p className="font-bold text-slate-700">No se encontraron postulantes con los filtros seleccionados</p>
                   <p className="text-xs text-slate-400 mt-1">Prueba borrando los criterios de búsqueda</p>
@@ -526,6 +523,8 @@ export const CandidateTable: React.FC<Props> = ({
             ) : (
               paginatedCandidates.map((cand) => {
                 const isSelected = selectedIds.includes(cand.id);
+                const isEligible = isCandidateEligible(cand);
+                const isHpc = (cand.hpc || '').toLowerCase() === 'si' || cand.channel === 'Cultivación de HPC';
 
                 return (
                   <tr
@@ -547,17 +546,17 @@ export const CandidateTable: React.FC<Props> = ({
                       <td className="p-3">
                         <div className="font-bold text-slate-900">{cand.fullName}</div>
                         <div className="text-[11px] text-slate-500">{cand.email}</div>
-                        <div className="text-[10px] text-slate-400">{cand.phone} • {cand.department}</div>
+                        <div className="text-[10px] text-slate-400">{cand.phone}</div>
                       </td>
                     )}
 
                     {visibleColumns.university && (
                       <td className="p-3">
-                        <div className="font-semibold text-slate-800">{cand.universityNormalized}</div>
+                        <div className="font-semibold text-slate-800">{cand.universityNormalized || cand.universityRaw}</div>
                         <div className="text-[11px] text-slate-500">
                           {cand.career} ({cand.graduationYear})
                         </div>
-                        {cand.universityRaw !== cand.universityNormalized && (
+                        {cand.universityRaw && cand.universityNormalized && cand.universityRaw !== cand.universityNormalized && (
                           <div className="text-[10px] text-amber-700 italic">
                             Ingresó como: "{cand.universityRaw}"
                           </div>
@@ -567,20 +566,45 @@ export const CandidateTable: React.FC<Props> = ({
 
                     {visibleColumns.route && (
                       <td className="p-3">
-                        {cand.route === 'STEM' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#152238]/10 text-[#152238]">
-                            Ruta STEM
+                        {(() => {
+                          const routeVal = getCandidateRoute(cand);
+                          if (routeVal === 'STEM y Bilingüe') {
+                            return (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                Ruta Bilingüe y STEM
+                              </span>
+                            );
+                          } else if (routeVal === 'STEM') {
+                            return (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#152238]/10 text-[#152238]">
+                                Ruta STEM
+                              </span>
+                            );
+                          } else if (routeVal === 'Bilingüe') {
+                            return (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#2E9E82]/15 text-[#2E9E82]">
+                                Ruta Bilingüe ({cand.englishLevel || 'B2+'})
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600">
+                                General
+                              </span>
+                            );
+                          }
+                        })()}
+                      </td>
+                    )}
+
+                    {visibleColumns.hpc && (
+                      <td className="p-3 text-center">
+                        {isHpc ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-pink-100 text-pink-700 border border-pink-200">
+                            HPC
                           </span>
-                        )}
-                        {cand.route === 'Bilingüe' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#2E9E82]/15 text-[#2E9E82]">
-                            Ruta Bilingüe ({cand.englishLevel})
-                          </span>
-                        )}
-                        {cand.route === 'General / No Priorizado' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600">
-                            General
-                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">-</span>
                         )}
                       </td>
                     )}
@@ -607,7 +631,7 @@ export const CandidateTable: React.FC<Props> = ({
 
                     {visibleColumns.eligibility && (
                       <td className="p-3 text-center">
-                        {cand.eligibility === 'Elegible' ? (
+                        {isEligible ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#2E9E82] text-white">
                             Elegible
                           </span>
@@ -622,7 +646,7 @@ export const CandidateTable: React.FC<Props> = ({
                     {visibleColumns.reason && (
                       <td className="p-3">
                         <span className="text-[11px] text-slate-600">
-                          {cand.ineligibilityReason}
+                          {isEligible ? 'Ninguno (Es Elegible)' : (cand.ineligibilityReason || 'Requisitos mínimos')}
                         </span>
                       </td>
                     )}
@@ -638,17 +662,10 @@ export const CandidateTable: React.FC<Props> = ({
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => onSelectCandidate(cand)}
-                            title="Ver / Editar Detalle"
+                            title="Ver Detalle"
                             className="p-1.5 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => onDeleteCandidate(cand.id)}
-                            title="Eliminar candidato"
-                            className="p-1.5 hover:bg-rose-100 rounded text-slate-400 hover:text-rose-600 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

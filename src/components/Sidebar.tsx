@@ -40,15 +40,15 @@ export const Sidebar: React.FC<Props> = ({
   const analyticsNavItems = [
     {
       id: 'universities',
-      label: 'Universidades y Mapeo',
+      label: 'Universidades',
       icon: Building2,
-      badge: '274 var.'
+      badge: 'QS / Prio'
     },
     {
       id: 'goals',
       label: 'Estructura de Metas',
       icon: Target,
-      badge: '1,000 meta'
+      badge: '5 metas'
     }
   ];
 
@@ -147,28 +147,41 @@ export const Sidebar: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Cohort 2027 Quick Stats Widget */}
-        <div className="p-3 bg-slate-800/60 rounded-lg border border-slate-700/50 text-xs">
-          <div className="font-bold text-slate-200 mb-2 flex items-center justify-between">
-            <span>Cohorte 2027</span>
+        {/* Formulario de Interés Cohorte 2026 Widget */}
+        <div className="p-3 bg-slate-800/80 rounded-lg border border-slate-700/60 text-xs">
+          <div className="font-bold text-slate-200 mb-1 flex items-center justify-between">
+            <span className="text-[#2E9E82] font-extrabold">Formulario de Interés — Cohorte 2026</span>
             <Sparkles className="w-3.5 h-3.5 text-[#F2A900]" />
           </div>
+          <p className="text-[10px] text-slate-400 mb-2">
+            Fuente: Tablero "Dash por Interés" (Estadísticas Descriptivas)
+          </p>
           <div className="space-y-1.5 text-slate-300">
             <div className="flex justify-between">
-              <span className="text-slate-400">Pre-registros:</span>
-              <span className="font-mono font-bold text-white">{candidateCount}</span>
+              <span className="text-slate-400">Total Pre-registros:</span>
+              <span className="font-mono font-bold text-white">2.022</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Elegibles:</span>
-              <span className="font-mono font-bold text-[#2E9E82]">{eligibleCount}</span>
+              <span className="text-slate-400">Elegibles de Interés:</span>
+              <span className="font-mono font-bold text-[#2E9E82]">1.011</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Tasa Elegibilidad:</span>
-              <span className="font-mono font-bold text-slate-200">
-                {candidateCount > 0 ? `${Math.round((eligibleCount / candidateCount) * 100)}%` : '0%'}
-              </span>
+              <span className="text-slate-400">No Cumplen Mínimos:</span>
+              <span className="font-mono font-bold text-rose-400">1.011</span>
+            </div>
+            <div className="flex justify-between pt-1 border-t border-slate-700/50">
+              <span className="text-slate-300 font-semibold">Tasa de Conversión:</span>
+              <span className="font-mono font-extrabold text-amber-400">50.0%</span>
             </div>
           </div>
+          <a
+            href="https://docs.google.com/spreadsheets/d/1hHAac3wB0JwTfL4n5VIpxJrdEc83_r2_ni0y0y8NYM4/edit?gid=911810443#gid=911810443"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2.5 block text-[10px] text-emerald-400 hover:text-emerald-300 underline font-semibold transition-colors"
+          >
+            ↗ Abrir Hoja Google Sheets
+          </a>
         </div>
       </nav>
 
