@@ -70,9 +70,12 @@ export const PanelAcademicProfile: React.FC<Props> = ({ candidates }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Chart 1: Nivel de Inglés */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-2xs">
-        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between">
+      <div className="bg-white border-2 border-teal-600/40 rounded-2xl overflow-hidden flex flex-col shadow-2xs">
+        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-teal-700/50">
           <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-wider bg-teal-800 text-teal-200 px-2 py-0.5 rounded">
+              Nivel 3 — Distribución
+            </span>
             <Languages className="w-4 h-4 text-emerald-400" />
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
               Distribución por Nivel de Inglés (A1 - C2)
@@ -124,9 +127,12 @@ export const PanelAcademicProfile: React.FC<Props> = ({ candidates }) => {
       </div>
 
       {/* Chart 2: Tipo de Pregrado */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-2xs">
-        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between">
+      <div className="bg-white border-2 border-teal-600/40 rounded-2xl overflow-hidden flex flex-col shadow-2xs">
+        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-teal-700/50">
           <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-wider bg-teal-800 text-teal-200 px-2 py-0.5 rounded">
+              Nivel 3 — Distribución
+            </span>
             <GraduationCap className="w-4 h-4 text-amber-400" />
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
               Tipo de Pregrado / Titulación
