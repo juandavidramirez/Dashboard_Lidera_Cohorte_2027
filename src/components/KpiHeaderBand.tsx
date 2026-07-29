@@ -68,9 +68,9 @@ export const KpiHeaderBand: React.FC<Props> = ({
               </span>
             </div>
 
-            {/* Metrics Breakdown Grid */}
+            {/* Metrics Breakdown Grid - 3-column symmetrical layout */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-3.5">
-              {/* Logrado */}
+              {/* Logrado vs Meta Cohorte */}
               <div className="bg-emerald-50/90 border border-emerald-200/90 p-3 rounded-xl flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
                   Logrado Hasta Hoy
@@ -81,7 +81,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
                       {eligibleCount.toLocaleString()}
                     </span>
                     <span className="text-xs font-bold text-emerald-800">
-                      / {totalApps.toLocaleString()}
+                      / {totalGoal.toLocaleString()}
                     </span>
                   </div>
                   <span className="text-[10px] text-emerald-700 font-extrabold block mt-0.5">
@@ -90,37 +90,32 @@ export const KpiHeaderBand: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Tasa de Elegibilidad */}
+              {/* Total Postulantes (Métrica discreta) */}
               <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                  Total Postulantes
+                </span>
+                <div className="mt-1">
+                  <span className="text-2xl font-black text-[#152238]">
+                    {totalApps.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                    Postulaciones registradas
+                  </span>
+                </div>
+              </div>
+
+              {/* Tasa de Elegibilidad Global */}
+              <div className="bg-amber-50/90 border border-amber-200/90 p-3 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
                   Tasa de Elegibilidad
                 </span>
                 <div className="mt-1">
                   <span className="text-2xl font-black text-[#152238]">
                     {eligibilityRate}%
                   </span>
-                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
-                    Elegibles sobre total postulantes
-                  </span>
-                </div>
-              </div>
-
-              {/* Pendiente / Brecha */}
-              <div className="bg-amber-50/90 border border-amber-300/90 p-3 rounded-xl flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-amber-950 uppercase tracking-wider block">
-                  Pendiente / Brecha
-                </span>
-                <div className="mt-1">
-                  <div className="flex items-baseline gap-1 flex-wrap">
-                    <span className="text-2xl font-black text-amber-950">
-                      {pendingCount.toLocaleString()}
-                    </span>
-                    <span className="text-xs font-bold text-amber-800">
-                      ({pendingPct}%)
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-amber-900 font-semibold block mt-0.5">
-                    Perfiles pendientes para la meta
+                  <span className="text-[10px] text-amber-800 font-medium block mt-0.5">
+                    {eligibleCount.toLocaleString()} de {totalApps.toLocaleString()} postulantes
                   </span>
                 </div>
               </div>
@@ -179,7 +174,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
 
             {/* Metrics Breakdown Grid - Identical 3-column layout as left card */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-3.5">
-              {/* Logrado Top 7 */}
+              {/* Logrado Top 7 vs Meta 300 */}
               <div className="bg-emerald-50/90 border border-emerald-200/90 p-3 rounded-xl flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
                   Elegibles Top 7
@@ -190,7 +185,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
                       {uniHpcStats.eligiblePrioritarias.toLocaleString()}
                     </span>
                     <span className="text-xs font-bold text-emerald-800">
-                      / {prioMeta}
+                      / {prioMeta.toLocaleString()}
                     </span>
                   </div>
                   <span className="text-[10px] text-emerald-700 font-extrabold block mt-0.5">
@@ -199,37 +194,32 @@ export const KpiHeaderBand: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Participación sobre Elegibles */}
+              {/* Total Postulantes Top 7 (Métrica discreta) */}
               <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                  Aporte al Total Elegible
+                  Postulantes Top 7
+                </span>
+                <div className="mt-1">
+                  <span className="text-2xl font-black text-[#152238]">
+                    {uniHpcStats.totalPrioritarias.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                    Postulaciones en Top 7
+                  </span>
+                </div>
+              </div>
+
+              {/* Concentración / Tasa Elegibilidad Top 7 */}
+              <div className="bg-amber-50/90 border border-amber-200/90 p-3 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
+                  Concentración Top 7
                 </span>
                 <div className="mt-1">
                   <span className="text-2xl font-black text-[#152238]">
                     {eligibleCount > 0 ? Math.round((uniHpcStats.eligiblePrioritarias / eligibleCount) * 100) : 0}%
                   </span>
-                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
-                    Concentración en Top 7
-                  </span>
-                </div>
-              </div>
-
-              {/* Pendiente / Brecha Top 7 */}
-              <div className="bg-amber-50/90 border border-amber-300/90 p-3 rounded-xl flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-amber-950 uppercase tracking-wider block">
-                  Pendiente Top 7
-                </span>
-                <div className="mt-1">
-                  <div className="flex items-baseline gap-1 flex-wrap">
-                    <span className="text-2xl font-black text-amber-950">
-                      {Math.max(0, prioMeta - uniHpcStats.eligiblePrioritarias).toLocaleString()}
-                    </span>
-                    <span className="text-xs font-bold text-amber-800">
-                      ({Math.max(0, Math.round((100 - prioAchievedPct) * 10) / 10)}%)
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-amber-900 font-semibold block mt-0.5">
-                    Pendientes para la meta 300
+                  <span className="text-[10px] text-amber-800 font-medium block mt-0.5">
+                    Aporte al total elegible ({uniHpcStats.eligiblePrioritarias} de {eligibleCount})
                   </span>
                 </div>
               </div>
