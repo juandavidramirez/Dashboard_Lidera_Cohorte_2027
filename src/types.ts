@@ -124,6 +124,10 @@ export interface WeeklyChannelMixStat {
   refiere: number;
   otros: number;
   total: number;
+  rrssCount?: number;
+  giraCount?: number;
+  refiereCount?: number;
+  otrosCount?: number;
 }
 
 export interface YoyMonthlyStat {

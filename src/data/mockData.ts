@@ -13,7 +13,7 @@ export const INITIAL_GOAL_TARGETS: GoalTarget[] = [
     id: 'goal-1',
     category: 'Elegibilidad Global',
     metricName: 'Perfiles Elegibles Acumulados (Cohorte 2027)',
-    target2027: 1000,
+    target2027: 978,
     current2027: 885,
     unit: 'personas',
     deadline: '2027-08-31',
@@ -262,8 +262,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Gira LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-02-14',
-    month: 'Feb',
+    registrationDate: '2026-07-25',
+    month: 'Jul',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'Si',
     notes: 'Inclinación fuerte hacia educación STEM en zonas rurales de Cundinamarca.'
   },
   {
@@ -285,8 +288,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'LIDERA en RRSS',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-03-01',
-    month: 'Mar',
+    registrationDate: '2026-07-28',
+    month: 'Jul',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'Si',
     notes: 'Experiencia previa como voluntario en tutorías de inglés.'
   },
   {
@@ -308,8 +314,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Refiere LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-01-20',
-    month: 'Ene',
+    registrationDate: '2026-07-29',
+    month: 'Jul',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'No',
     referredBy: 'Alumni 2024 - Carlos Silva'
   },
   {
@@ -331,8 +340,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'LIDERA en RRSS',
     eligibility: 'No Elegible',
     ineligibilityReason: 'Enfoque (No STEM / No Bilingüe B2+)',
-    registrationDate: '2027-04-12',
-    month: 'Abr',
+    registrationDate: '2026-07-30',
+    month: 'Jul',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'No',
     notes: 'Le interesa la gestión comunitaria, pero no cumple criterios de ruta STEM ni B2+.'
   },
   {
@@ -354,8 +366,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Gira LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-05-08',
-    month: 'May',
+    registrationDate: '2026-07-31',
+    month: 'Jul',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'Si',
     notes: 'Candidata destacada identificada en hackathon regional.'
   },
   {
@@ -377,8 +392,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Gira LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-03-22',
-    month: 'Mar'
+    registrationDate: '2026-08-01',
+    month: 'Ago',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'Si'
   },
   {
     id: 'cand-107',
@@ -399,8 +417,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'LIDERA en RRSS',
     eligibility: 'No Elegible',
     ineligibilityReason: 'Promedio Académico (< 3.5)',
-    registrationDate: '2027-02-05',
-    month: 'Feb'
+    registrationDate: '2026-08-02',
+    month: 'Ago',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'No'
   },
   {
     id: 'cand-108',
@@ -421,8 +442,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Refiere LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-06-15',
-    month: 'Jun',
+    registrationDate: '2026-08-03',
+    month: 'Ago',
+    universidadPriorizada: 'SI',
+    universidadTop13QS: 'SI',
+    hpc: 'Si',
     referredBy: 'Docente Aliado - Profe Luis'
   },
   {
@@ -444,8 +468,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Refiere LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-05-29',
-    month: 'May'
+    registrationDate: '2026-08-05',
+    month: 'Ago',
+    universidadPriorizada: 'NO',
+    universidadTop13QS: 'SI',
+    hpc: 'Si'
   },
   {
     id: 'cand-110',
@@ -466,8 +493,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Gira LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-01-11',
-    month: 'Ene'
+    registrationDate: '2026-08-08',
+    month: 'Ago',
+    universidadPriorizada: 'NO',
+    universidadTop13QS: 'NO',
+    hpc: 'No'
   },
   {
     id: 'cand-111',
@@ -488,8 +518,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'LIDERA en RRSS',
     eligibility: 'No Elegible',
     ineligibilityReason: 'Promedio Académico (< 3.5)',
-    registrationDate: '2027-04-28',
-    month: 'Abr'
+    registrationDate: '2026-08-12',
+    month: 'Ago',
+    universidadPriorizada: 'NO',
+    universidadTop13QS: 'SI',
+    hpc: 'No'
   },
   {
     id: 'cand-112',
@@ -510,8 +543,11 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     channel: 'Gira LIDERA',
     eligibility: 'Elegible',
     ineligibilityReason: 'Ninguno (Es Elegible)',
-    registrationDate: '2027-03-18',
-    month: 'Mar'
+    registrationDate: '2026-08-15',
+    month: 'Ago',
+    universidadPriorizada: 'NO',
+    universidadTop13QS: 'SI',
+    hpc: 'Si'
   }
 ];
 

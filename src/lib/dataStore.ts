@@ -170,13 +170,26 @@ class DataStore {
   private init() {
     try {
       const storedCand = localStorage.getItem(STORAGE_KEYS.CANDIDATES);
-      this.candidates = storedCand ? JSON.parse(storedCand) : INITIAL_CANDIDATES;
+      if (storedCand) {
+        const parsed = JSON.parse(storedCand);
+        this.candidates = parsed.map((c: Candidate) => {
+          if (c.registrationDate && (c.registrationDate.startsWith('2027-01') || c.registrationDate.startsWith('2027-02') || c.registrationDate.startsWith('2027-03') || c.registrationDate.startsWith('2027-04') || c.registrationDate.startsWith('2027-05') || c.registrationDate.startsWith('2027-06'))) {
+            const initialMatch = INITIAL_CANDIDATES.find(ic => ic.id === c.id);
+            if (initialMatch) {
+              return { ...c, registrationDate: initialMatch.registrationDate, month: initialMatch.month };
+            }
+          }
+          return c;
+        });
+      } else {
+        this.candidates = INITIAL_CANDIDATES;
+      }
 
       const storedGoals = localStorage.getItem(STORAGE_KEYS.GOALS);
       if (storedGoals) {
         const parsed = JSON.parse(storedGoals);
         if (Array.isArray(parsed) && parsed.length >= 5) {
-          this.goals = parsed;
+          this.goals = parsed.map(g => g.id === 'goal-1' ? { ...g, target2027: 978 } : g);
         } else {
           this.goals = INITIAL_GOAL_TARGETS;
         }

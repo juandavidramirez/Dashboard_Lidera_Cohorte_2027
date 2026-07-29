@@ -12,37 +12,66 @@ import { INITIAL_GOAL_TARGETS } from '../data/mockData';
 const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 export const WEEK_DEFINITIONS = [
-  { key: 'Semana 0', range: 'Acumulado hasta 27 jul (Pre-lanzamiento)' },
-  { key: 'Semana 1', range: '28 jul – 2 ago' },
-  { key: 'Semana 2', range: '3 ago – 9 ago' },
-  { key: 'Semana 3', range: '10 ago – 16 ago' },
-  { key: 'Semana 4', range: '17 ago – 23 ago' },
-  { key: 'Semana 5', range: '24 ago – 30 ago' },
-  { key: 'Semana 6', range: '31 ago – 6 sept (cierre)' }
+  { key: 'Semana 0', label: 'Sem 0', range: 'Antes de 28 jul' },
+  { key: 'Semana 1', label: 'Sem 1', range: '28 jul – 3 ago' },
+  { key: 'Semana 2', label: 'Sem 2', range: '4 ago – 10 ago' },
+  { key: 'Semana 3', label: 'Sem 3', range: '11 ago – 17 ago' },
+  { key: 'Semana 4', label: 'Sem 4', range: '18 ago – 24 ago' },
+  { key: 'Semana 5', label: 'Sem 5', range: '25 ago – 31 ago' },
+  { key: 'Semana 6', label: 'Sem 6', range: '1 sep – 7 sep' },
+  { key: 'Semana 7', label: 'Sem 7', range: '8 sep – 14 sep' }
 ];
 
 export function getCandidateWeekKey(cand: Candidate, index: number): string {
   const dateStr = cand.registrationDate || cand.fechaCreacion;
   if (dateStr) {
-    const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) {
-      const month = d.getMonth(); // 0-indexed (6=Jul, 7=Aug, 8=Sep)
-      const date = d.getDate();
-      if (month < 6 || (month === 6 && date < 28)) return 'Semana 0';
-      if (month === 6 && date >= 28) return 'Semana 1';
-      if (month === 7) {
-        if (date <= 2) return 'Semana 1';
-        if (date <= 9) return 'Semana 2';
-        if (date <= 16) return 'Semana 3';
-        if (date <= 23) return 'Semana 4';
-        if (date <= 30) return 'Semana 5';
-        return 'Semana 6';
+    const cleanDate = dateStr.split('T')[0];
+    const parts = cleanDate.split('-').map(Number);
+    if (parts.length === 3 && !parts.some(isNaN)) {
+      const month = parts[1]; // 1-indexed: 7=July, 8=August, 9=September
+      const date = parts[2];
+
+      // Before July 28 -> Semana 0
+      if (month < 7 || (month === 7 && date < 28)) return 'Semana 0';
+      // July 28 - July 31 -> Semana 1
+      if (month === 7 && date >= 28) return 'Semana 1';
+      // August (month === 8)
+      if (month === 8) {
+        if (date <= 3) return 'Semana 1';
+        if (date <= 10) return 'Semana 2';
+        if (date <= 17) return 'Semana 3';
+        if (date <= 24) return 'Semana 4';
+        return 'Semana 5';
       }
-      if (month >= 8) return 'Semana 6';
+      // September (month === 9)
+      if (month === 9) {
+        if (date <= 7) return 'Semana 6';
+        return 'Semana 7';
+      }
+      if (month > 9) return 'Semana 7';
+    } else {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const month = d.getUTCMonth() + 1; // 1-indexed UTC to prevent timezone shift
+        const date = d.getUTCDate();
+        if (month < 7 || (month === 7 && date < 28)) return 'Semana 0';
+        if (month === 7 && date >= 28) return 'Semana 1';
+        if (month === 8) {
+          if (date <= 3) return 'Semana 1';
+          if (date <= 10) return 'Semana 2';
+          if (date <= 17) return 'Semana 3';
+          if (date <= 24) return 'Semana 4';
+          return 'Semana 5';
+        }
+        if (month >= 9) {
+          if (month === 9 && date <= 7) return 'Semana 6';
+          return 'Semana 7';
+        }
+      }
     }
   }
-  // Fallback evenly distributed across 7 weeks
-  const weekIdx = index % 7;
+  // Fallback for candidates without explicit date: map across weeks
+  const weekIdx = index % WEEK_DEFINITIONS.length;
   return WEEK_DEFINITIONS[weekIdx].key;
 }
 
@@ -104,24 +133,26 @@ export function calculateEligibleCount(candidates: Candidate[]): number {
   return candidates.filter(isCandidateEligible).length;
 }
 
-// Calculate Profile Composition (Mutually exclusive assignment)
+// Calculate Profile Composition (Mutually exclusive assignment: STEM includes STEM+Bilingual)
 export function calculateProfileComposition(candidates: Candidate[]) {
   const eligible = candidates.filter(isCandidateEligible);
   const totalEligible = eligible.length;
 
-  let pureStemCount = 0;
-  let pureBilingualCount = 0;
-  let stemAndBilingualCount = 0;
+  let stemCount = 0; // STEM only + STEM & Bilingual
+  let bilingualCount = 0; // Bilingual ONLY
   let generalCount = 0;
 
   eligible.forEach((c) => {
-    const route = getCandidateRoute(c);
-    if (route === 'STEM y Bilingüe') {
-      stemAndBilingualCount++;
-    } else if (route === 'STEM') {
-      pureStemCount++;
-    } else if (route === 'Bilingüe') {
-      pureBilingualCount++;
+    const englishLevel = c.englishLevel || 'A1';
+    const isBilingual = c.isBilingual || ['B2', 'C1', 'C2'].includes(englishLevel);
+    const isStem = c.isStem || String(c.stemClass || '').includes('STEM');
+
+    if (isStem) {
+      // STEM or STEM+Bilingual goes to STEM
+      stemCount++;
+    } else if (isBilingual) {
+      // Bilingual ONLY
+      bilingualCount++;
     } else {
       generalCount++;
     }
@@ -129,12 +160,13 @@ export function calculateProfileComposition(candidates: Candidate[]) {
 
   return {
     totalEligible,
-    stemCount: pureStemCount + stemAndBilingualCount,
-    bilingualCount: pureBilingualCount + stemAndBilingualCount,
-    pureStemCount,
-    pureBilingualCount,
-    stemAndBilingualCount,
-    generalCount
+    stemCount,
+    bilingualCount,
+    generalCount,
+    // Keep backward compatible props for existing callers
+    pureStemCount: stemCount,
+    pureBilingualCount: bilingualCount,
+    stemAndBilingualCount: 0
   };
 }
 
@@ -228,8 +260,8 @@ export function calculateYoyMonthlyStats(candidates: Candidate[]): YoyMonthlySta
   });
 }
 
-// Calculate Weekly Eligibility Stats (Fixed ranges: Sem 1 to Sem 6)
-export function calculateWeeklyEligibilityStats(candidates: Candidate[]): WeeklyEligibilityStat[] {
+// Calculate Weekly Eligibility Stats (Supports Weekly and Cumulative modes across 8 Weeks)
+export function calculateWeeklyEligibilityStats(candidates: Candidate[], isCumulative: boolean = false): WeeklyEligibilityStat[] {
   const map = new Map<string, {
     eligible: number;
     notEligible: number;
@@ -263,28 +295,59 @@ export function calculateWeeklyEligibilityStats(candidates: Candidate[]): Weekly
     map.set(wKey, item);
   });
 
+  let runningEligible = 0;
+  let runningNotEligible = 0;
+  let runningReasonEnfoque = 0;
+  let runningReasonGpa = 0;
+  let runningReasonOther = 0;
+
   return WEEK_DEFINITIONS.map(w => {
     const item = map.get(w.key)!;
-    const total = item.eligible + item.notEligible;
-    const rate = total > 0 ? Math.round((item.eligible / total) * 1000) / 10 : 0;
 
-    return {
-      weekKey: w.key,
-      label: w.key,
-      dateRange: w.range,
-      eligibleCount: item.eligible,
-      notEligibleCount: item.notEligible,
-      total,
-      eligibilityRate: rate,
-      ineligibleReasonEnfoque: item.reasonEnfoque,
-      ineligibleReasonGpa: item.reasonGpa,
-      ineligibleReasonOther: item.reasonOther
-    };
+    if (isCumulative) {
+      runningEligible += item.eligible;
+      runningNotEligible += item.notEligible;
+      runningReasonEnfoque += item.reasonEnfoque;
+      runningReasonGpa += item.reasonGpa;
+      runningReasonOther += item.reasonOther;
+
+      const total = runningEligible + runningNotEligible;
+      const rate = total > 0 ? Math.round((runningEligible / total) * 1000) / 10 : 0;
+
+      return {
+        weekKey: w.key,
+        label: w.key,
+        dateRange: w.range,
+        eligibleCount: runningEligible,
+        notEligibleCount: runningNotEligible,
+        total,
+        eligibilityRate: rate,
+        ineligibleReasonEnfoque: runningReasonEnfoque,
+        ineligibleReasonGpa: runningReasonGpa,
+        ineligibleReasonOther: runningReasonOther
+      };
+    } else {
+      const total = item.eligible + item.notEligible;
+      const rate = total > 0 ? Math.round((item.eligible / total) * 1000) / 10 : 0;
+
+      return {
+        weekKey: w.key,
+        label: w.key,
+        dateRange: w.range,
+        eligibleCount: item.eligible,
+        notEligibleCount: item.notEligible,
+        total,
+        eligibilityRate: rate,
+        ineligibleReasonEnfoque: item.reasonEnfoque,
+        ineligibleReasonGpa: item.reasonGpa,
+        ineligibleReasonOther: item.reasonOther
+      };
+    }
   });
 }
 
-// Calculate Weekly Channel Mix Stats (100% stacked)
-export function calculateWeeklyChannelMixStats(candidates: Candidate[]): WeeklyChannelMixStat[] {
+// Calculate Weekly Channel Mix Stats (Supports Weekly and Cumulative modes across 8 Weeks)
+export function calculateWeeklyChannelMixStats(candidates: Candidate[], isCumulative: boolean = false): WeeklyChannelMixStat[] {
   const map = new Map<string, { rrss: number; gira: number; refiere: number; otros: number }>();
 
   WEEK_DEFINITIONS.forEach(w => {
@@ -308,37 +371,89 @@ export function calculateWeeklyChannelMixStats(candidates: Candidate[]): WeeklyC
     map.set(wKey, item);
   });
 
+  let runningRrss = 0;
+  let runningGira = 0;
+  let runningRefiere = 0;
+
   return WEEK_DEFINITIONS.map(w => {
     const counts = map.get(w.key) || { rrss: 0, gira: 0, refiere: 0, otros: 0 };
-    const total = counts.rrss + counts.gira + counts.refiere + counts.otros;
 
-    if (total === 0) {
+    if (isCumulative) {
+      runningRrss += counts.rrss;
+      runningGira += counts.gira;
+      runningRefiere += counts.refiere;
+
+      const total = runningRrss + runningGira + runningRefiere;
+      if (total === 0) {
+        return {
+          weekKey: w.key,
+          label: w.key,
+          dateRange: w.range,
+          rrss: 0,
+          gira: 0,
+          refiere: 0,
+          otros: 0,
+          total: 0
+        };
+      }
+
+      const rrssPct = Math.round((runningRrss / total) * 100);
+      const giraPct = Math.round((runningGira / total) * 100);
+      const refierePct = 100 - rrssPct - giraPct;
+
       return {
         weekKey: w.key,
         label: w.key,
         dateRange: w.range,
-        rrss: 48,
-        gira: 32,
-        refiere: 20,
+        rrss: rrssPct,
+        gira: giraPct,
+        refiere: refierePct,
         otros: 0,
-        total: 100
+        total,
+        rrssCount: runningRrss,
+        giraCount: runningGira,
+        refiereCount: runningRefiere,
+        otrosCount: 0
+      };
+    } else {
+      const total = counts.rrss + counts.gira + counts.refiere + counts.otros;
+
+      if (total === 0) {
+        return {
+          weekKey: w.key,
+          label: w.key,
+          dateRange: w.range,
+          rrss: 0,
+          gira: 0,
+          refiere: 0,
+          otros: 0,
+          total: 0,
+          rrssCount: 0,
+          giraCount: 0,
+          refiereCount: 0,
+          otrosCount: 0
+        };
+      }
+
+      const rrssPct = Math.round((counts.rrss / total) * 100);
+      const giraPct = Math.round((counts.gira / total) * 100);
+      const refierePct = 100 - rrssPct - giraPct;
+
+      return {
+        weekKey: w.key,
+        label: w.key,
+        dateRange: w.range,
+        rrss: rrssPct,
+        gira: giraPct,
+        refiere: refierePct,
+        otros: 0,
+        total,
+        rrssCount: counts.rrss,
+        giraCount: counts.gira,
+        refiereCount: counts.refiere,
+        otrosCount: counts.otros
       };
     }
-
-    const rrssPct = Math.round((counts.rrss / total) * 100);
-    const giraPct = Math.round((counts.gira / total) * 100);
-    const refierePct = 100 - rrssPct - giraPct;
-
-    return {
-      weekKey: w.key,
-      label: w.key,
-      dateRange: w.range,
-      rrss: rrssPct,
-      gira: giraPct,
-      refiere: refierePct,
-      otros: 0,
-      total: 100
-    };
   });
 }
 
@@ -391,4 +506,56 @@ export function calculateSynchronizedGoals(goals: GoalTarget[], candidates: Cand
 }
 
 export const calculateChannelMixStats = calculateWeeklyChannelMixStats;
+
+// Calculate University & HPC Metrics for Header Cards
+export function calculateUniversityAndHpcMetrics(candidates: Candidate[]) {
+  const totalApplicants = candidates.length;
+  const eligible = candidates.filter(isCandidateEligible);
+  const totalEligible = eligible.length;
+
+  let eligiblePrioritarias = 0;
+  let totalPrioritarias = 0;
+  let eligibleTop13 = 0;
+  let totalTop13 = 0;
+  let totalHpc = 0;
+  let eligibleHpc = 0;
+
+  const prioKeywords = ['andes', 'nacional', 'javeriana', 'antioquia', 'icesi', 'norte', 'valle', 'pedagógica', 'uis'];
+  const top13Keywords = [...prioKeywords, 'sabana', 'rosario', 'bolivariana', 'eafit', 'cauca', 'caldas', 'industrial'];
+
+  candidates.forEach((c) => {
+    const uniName = (c.universityNormalized || c.universityRaw || '').toLowerCase();
+    
+    const isPrio = c.universidadPriorizada === 'SI' || Boolean((c as any).isPrioritarias) ||
+      prioKeywords.some(k => uniName.includes(k));
+    
+    const isTop13 = c.universidadTop13QS === 'SI' || Boolean((c as any).isTop13QS) || isPrio ||
+      top13Keywords.some(k => uniName.includes(k));
+
+    const isHpc = (c.hpc || '').toLowerCase() === 'si' || c.channel === 'Cultivación de HPC' || (c as any).isHpc === true;
+
+    if (isPrio) totalPrioritarias++;
+    if (isTop13) totalTop13++;
+    if (isHpc) totalHpc++;
+
+    if (isCandidateEligible(c)) {
+      if (isPrio) eligiblePrioritarias++;
+      if (isTop13) eligibleTop13++;
+      if (isHpc) eligibleHpc++;
+    }
+  });
+
+  return {
+    totalApplicants,
+    totalEligible,
+    eligiblePrioritarias,
+    totalPrioritarias,
+    targetPrioritarias: 300,
+    eligibleTop13,
+    totalTop13,
+    totalHpc,
+    eligibleHpc
+  };
+}
+
 

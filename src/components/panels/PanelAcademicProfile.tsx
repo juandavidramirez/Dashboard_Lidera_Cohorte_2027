@@ -62,7 +62,7 @@ export const PanelAcademicProfile: React.FC<Props> = ({ candidates }) => {
     const total = candidates.length || 1;
     return [
       { name: 'Licenciatura', cantidad: licenciatura, pct: Math.round((licenciatura / total) * 100), color: '#F2A900' },
-      { name: 'No Aplazable', cantidad: noAplazable, pct: Math.round((noAplazable / total) * 100), color: '#E11D48' },
+      { name: 'No Plazable', cantidad: noAplazable, pct: Math.round((noAplazable / total) * 100), color: '#E11D48' },
       { name: 'Profesional', cantidad: profesional, pct: Math.round((profesional / total) * 100), color: '#152238' }
     ];
   }, [candidates]);
@@ -139,7 +139,7 @@ export const PanelAcademicProfile: React.FC<Props> = ({ candidates }) => {
 
         <div className="p-4 flex-1 flex flex-col justify-between">
           <p className="text-[11px] text-slate-500 mb-2">
-            Proporción entre Licenciatura, No Aplazable y Profesional
+            Proporción entre Licenciatura, No Plazable y Profesional
           </p>
 
           <div className="h-48 w-full">

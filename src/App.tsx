@@ -176,23 +176,25 @@ export default function App() {
               {/* Header Band KPI + Segmented Progress Bar */}
               <KpiHeaderBand
                 eligibleCount={eligibleCount}
+                totalCandidatesCount={candidates.length}
                 totalGoal={totalGoalTarget}
                 yoyGrowthPct={14.2}
                 goalTarget={mainGoal}
+                candidates={candidates}
               />
 
               {/* 2x2 Panel Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Panel A: Eligibility Rate */}
-                <PanelEligibilityRate monthlyStats={monthlyStats} />
+                <PanelEligibilityRate candidates={candidates} />
 
                 {/* Panel B: Profile Composition */}
                 <PanelProfileComposition
-                  pureStemCount={profileComp.pureStemCount}
-                  pureBilingualCount={profileComp.pureBilingualCount}
-                  stemAndBilingualCount={profileComp.stemAndBilingualCount}
+                  stemCount={profileComp.stemCount}
+                  bilingualCount={profileComp.bilingualCount}
                   generalCount={profileComp.generalCount}
                   totalEligible={eligibleCount}
+                  totalApplicants={candidates.length}
                 />
 
                 {/* Panel C: YoY Volume & Monthly Trend */}
@@ -203,7 +205,7 @@ export default function App() {
                 />
 
                 {/* Panel D: Channel Mix Trend */}
-                <PanelChannelMix channelData={channelStats} />
+                <PanelChannelMix candidates={candidates} />
               </div>
 
               {/* Perfil Académico (Nivel de Inglés + Tipo de Pregrado) */}

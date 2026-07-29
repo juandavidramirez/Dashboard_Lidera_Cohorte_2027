@@ -131,7 +131,7 @@ export const CandidateTable: React.FC<Props> = ({
 
       // HPC Filter
       if (filters.hpc !== 'ALL') {
-        const isHpc = (c.hpc || '').toLowerCase() === 'si' || c.channel === 'Cultivación de HPC';
+        const isHpc = (c.hpc || '').toLowerCase() === 'si' || c.channel === 'Cultivación de HPC' || (c as any).isHpc === true;
         if (filters.hpc === 'SI' && !isHpc) return false;
         if (filters.hpc === 'NO' && isHpc) return false;
       }
@@ -242,9 +242,16 @@ export const CandidateTable: React.FC<Props> = ({
             <UserCheck className="w-5 h-5 text-[#2E9E82]" />
             Registros del Formulario de Convocatoria LIDERA (Cohorte 2027)
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Registros del Formulario de Convocatoria LIDERA — Cohorte 2027 — Mostrando {filteredCandidates.length} de {candidates.length} candidatos registrados
-          </p>
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-extrabold bg-[#152238] text-white shadow-2xs border border-slate-700">
+              Mostrando {filteredCandidates.length} de {candidates.length} candidatos registrados
+            </span>
+            {filteredCandidates.length < candidates.length && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                Filtro activo ({candidates.length - filteredCandidates.length} ocultos)
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Global actions & Column toggle */}
@@ -418,7 +425,7 @@ export const CandidateTable: React.FC<Props> = ({
       {selectedIds.length > 0 && (
         <div className="bg-[#152238] text-white p-3 px-4 flex items-center justify-between animate-fadeIn transition-all">
           <div className="flex items-center gap-3 text-xs font-semibold">
-            <span className="bg-white/20 px-2 py-0.5 rounded text-white font-mono">
+            <span className="bg-white/20 px-2.5 py-0.5 rounded text-white font-mono">
               {selectedIds.length} candidatos seleccionados
             </span>
             <span>Acciones disponibles:</span>
