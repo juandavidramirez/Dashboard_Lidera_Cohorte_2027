@@ -89,13 +89,10 @@ export const PanelChannelMix: React.FC<Props> = ({
   }
 
   return (
-    <div className="bg-white border-2 border-indigo-300/80 rounded-2xl overflow-hidden flex flex-col shadow-2xs h-full">
+    <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs h-full">
       {/* Title Strip in Amber #F2A900 */}
       <div className="bg-[#F2A900] px-3.5 py-2 flex items-center justify-between border-b border-amber-300">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-wider bg-slate-900 text-amber-300 px-2 py-0.5 rounded shadow-2xs">
-            Nivel 2 — Panel Secundario
-          </span>
           <h2 className="text-xs font-black text-slate-900 uppercase tracking-wider">
             Panel D — Mezcla por Canal de Atracción
           </h2>
@@ -197,8 +194,8 @@ export const PanelChannelMix: React.FC<Props> = ({
                 />
                 <Line
                   type="monotone"
-                  dataKey="rrssCount"
-                  name="RRSS LIDERA"
+                  dataKey="giraCount"
+                  name="Gira LIDERA"
                   stroke="#2E9E82"
                   strokeWidth={3}
                   dot={{ r: 4, fill: '#2E9E82', strokeWidth: 2, stroke: '#FFFFFF' }}
@@ -206,11 +203,11 @@ export const PanelChannelMix: React.FC<Props> = ({
                 />
                 <Line
                   type="monotone"
-                  dataKey="giraCount"
-                  name="Gira LIDERA"
-                  stroke="#7C3AED"
+                  dataKey="rrssCount"
+                  name="LIDERA en RRSS"
+                  stroke="#64748B"
                   strokeWidth={3}
-                  dot={{ r: 4, fill: '#7C3AED', strokeWidth: 2, stroke: '#FFFFFF' }}
+                  dot={{ r: 4, fill: '#64748B', strokeWidth: 2, stroke: '#FFFFFF' }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -229,8 +226,8 @@ export const PanelChannelMix: React.FC<Props> = ({
                     const payload = item.payload;
                     let count = 0;
                     if (name.includes('Refiere')) count = payload.refiereCount;
-                    else if (name.includes('RRSS')) count = payload.rrssCount;
                     else if (name.includes('Gira')) count = payload.giraCount;
+                    else if (name.includes('RRSS')) count = payload.rrssCount;
 
                     return [`${val}% (${count} aplicación${count !== 1 ? 'es' : ''})`, name];
                   }}
@@ -241,9 +238,9 @@ export const PanelChannelMix: React.FC<Props> = ({
                   }}
                   contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
                 />
-                <Bar dataKey="refiere" name="Refiere LIDERA" stackId="a" fill="#152238" />
-                <Bar dataKey="rrss" name="LIDERA en RRSS" stackId="a" fill="#2E9E82" />
-                <Bar dataKey="gira" name="Gira LIDERA" stackId="a" fill="#7C3AED" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="rrss" name="LIDERA en RRSS" stackId="a" fill="#CBD5E1" />
+                <Bar dataKey="gira" name="Gira LIDERA" stackId="a" fill="#2E9E82" />
+                <Bar dataKey="refiere" name="Refiere LIDERA" stackId="a" fill="#152238" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

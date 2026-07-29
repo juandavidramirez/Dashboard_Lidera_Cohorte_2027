@@ -63,7 +63,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
                   Meta e Indicador de Brecha (Elegibilidad Global)
                 </h2>
               </div>
-              <span className="text-xs font-black bg-[#152238] text-amber-300 px-3 py-1 rounded-md shadow-2xs shrink-0">
+              <span className="text-xs font-black bg-[#152238] text-[#F2A900] px-3 py-1 rounded-md shadow-2xs shrink-0">
                 Meta Cohorte: {totalGoal.toLocaleString()} elegibles
               </span>
             </div>
@@ -126,7 +126,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* ENLARGED Meta Progress Bar (Responsive Text & Sizing) */}
+            {/* ENLARGED Meta Progress Bar */}
             <div className="space-y-1.5 mt-3">
               <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-extrabold text-slate-600 px-0.5 flex-wrap gap-x-2">
                 <span>Avance de Meta: {achievedPct}% logrado</span>
@@ -149,7 +149,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs flex-wrap gap-2">
             <span className="text-slate-600 font-medium text-[11px] sm:text-xs">Fecha de cierre: <strong className="text-slate-900 font-extrabold">6 de Septiembre</strong></span>
             
-            {/* ENHANCED ALERT (Softer Rose Red Accent per request) */}
+            {/* ENHANCED ALERT */}
             {achievedPct >= 80 ? (
               <span className="bg-emerald-600 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs uppercase tracking-wide flex items-center gap-1.5 shadow-2xs border border-emerald-700">
                 <CheckCircle2 className="w-4 h-4 shrink-0" /> En Trayectoria Correcta
@@ -162,7 +162,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Right 50%: Universidades Priorizadas (Top 7) - LEVEL 1 HIGHLIGHTED GOLD/AMBER BORDERS */}
+        {/* Right 50%: Universidades Priorizadas (Top 7) - PERFECT SYMMETRY WITH LEFT CARD */}
         <div className="bg-white border-2 border-amber-400 rounded-2xl p-4 sm:p-5 shadow-md ring-2 ring-amber-400/20 flex flex-col justify-between min-w-0">
           <div>
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-amber-100">
@@ -172,50 +172,84 @@ export const KpiHeaderBand: React.FC<Props> = ({
                   Universidades Priorizadas (Top 7)
                 </h2>
               </div>
-              <span className="text-xs font-black bg-amber-500 text-slate-900 px-3 py-1 rounded-md shadow-2xs shrink-0">
-                Meta: {prioMeta} elegibles
+              <span className="text-xs font-black bg-[#152238] text-[#F2A900] px-3 py-1 rounded-md shadow-2xs shrink-0">
+                Meta Cohorte: {prioMeta.toLocaleString()} elegibles
               </span>
             </div>
 
-            {/* Prominent Single Card for Top 7 Universities */}
-            <div className="my-3.5 bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-200 p-3.5 sm:p-4 rounded-xl flex items-center justify-between gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-extrabold text-amber-900 uppercase tracking-wider block truncate">
-                  Candidatos Elegibles Top 7
+            {/* Metrics Breakdown Grid - Identical 3-column layout as left card */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-3.5">
+              {/* Logrado Top 7 */}
+              <div className="bg-emerald-50/90 border border-emerald-200/90 p-3 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
+                  Elegibles Top 7
                 </span>
-                <div className="flex items-baseline gap-2 mt-1 flex-wrap">
-                  <span className="text-3xl sm:text-4xl font-black text-[#152238] tracking-tight">
-                    {uniHpcStats.eligiblePrioritarias.toLocaleString()}
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold text-amber-900">
-                    / {prioMeta} meta ({prioAchievedPct}%)
+                <div className="mt-1">
+                  <div className="flex items-baseline gap-1 flex-wrap">
+                    <span className="text-2xl font-black text-emerald-950">
+                      {uniHpcStats.eligiblePrioritarias.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-800">
+                      / {prioMeta}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 font-extrabold block mt-0.5">
+                    {prioAchievedPct}% de la meta Top 7
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-amber-800 font-medium mt-1 leading-snug">
-                  Universidades estratégicas de alta demanda nacional
-                </p>
               </div>
 
-              <div className="text-right shrink-0">
-                <div className="inline-flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-amber-400 text-slate-900 border-2 border-amber-500 shadow-sm">
-                  <span className="text-base sm:text-lg font-black leading-none">{prioAchievedPct}%</span>
-                  <span className="text-[7px] sm:text-[8px] font-bold uppercase mt-0.5">Avance</span>
+              {/* Participación sobre Elegibles */}
+              <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                  Aporte al Total Elegible
+                </span>
+                <div className="mt-1">
+                  <span className="text-2xl font-black text-[#152238]">
+                    {eligibleCount > 0 ? Math.round((uniHpcStats.eligiblePrioritarias / eligibleCount) * 100) : 0}%
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                    Concentración en Top 7
+                  </span>
+                </div>
+              </div>
+
+              {/* Pendiente / Brecha Top 7 */}
+              <div className="bg-amber-50/90 border border-amber-300/90 p-3 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-amber-950 uppercase tracking-wider block">
+                  Pendiente Top 7
+                </span>
+                <div className="mt-1">
+                  <div className="flex items-baseline gap-1 flex-wrap">
+                    <span className="text-2xl font-black text-amber-950">
+                      {Math.max(0, prioMeta - uniHpcStats.eligiblePrioritarias).toLocaleString()}
+                    </span>
+                    <span className="text-xs font-bold text-amber-800">
+                      ({Math.max(0, Math.round((100 - prioAchievedPct) * 10) / 10)}%)
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-amber-900 font-semibold block mt-0.5">
+                    Pendientes para la meta 300
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* ENLARGED Progress bar towards 300 target */}
+            {/* Progress Bar towards Top 7 Target - Same color palette as left card (#2E9E82) */}
             <div className="space-y-1.5 mt-3">
               <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-extrabold text-slate-600 px-0.5 flex-wrap gap-x-2">
-                <span>Progreso Meta Top 7: {prioAchievedPct}% alcanzado</span>
-                <span className="text-amber-900">{uniHpcStats.eligiblePrioritarias} de {prioMeta} elegibles</span>
+                <span>Avance Meta Top 7: {prioAchievedPct}% logrado</span>
+                <span className="text-amber-900">Brecha: {Math.max(0, prioMeta - uniHpcStats.eligiblePrioritarias)} pendientes ({Math.max(0, Math.round((100 - prioAchievedPct) * 10) / 10)}%)</span>
               </div>
-              <div className="w-full bg-slate-100 h-7 rounded-lg overflow-hidden border-2 border-slate-300 shadow-inner flex">
+              <div className="w-full h-8 bg-amber-100 rounded-lg overflow-hidden flex border-2 border-slate-300 shadow-inner">
                 <div
-                  className="bg-[#F2A900] h-full transition-all duration-500 flex items-center justify-center text-[10px] sm:text-xs font-black text-slate-950 px-2 whitespace-nowrap truncate"
+                  className="h-full bg-[#2E9E82] transition-all duration-700 flex items-center justify-center text-[10px] sm:text-xs font-black text-white px-2 overflow-hidden shadow-xs whitespace-nowrap truncate"
                   style={{ width: `${Math.max(prioAchievedPct, 12)}%` }}
                 >
-                  {prioAchievedPct}% ({uniHpcStats.eligiblePrioritarias} elegibles)
+                  {prioAchievedPct}% ({uniHpcStats.eligiblePrioritarias})
+                </div>
+                <div className="h-full flex-1 bg-amber-200/90 flex items-center justify-center text-[10px] sm:text-xs font-extrabold text-amber-950 px-2 overflow-hidden whitespace-nowrap truncate">
+                  {Math.max(0, prioMeta - uniHpcStats.eligiblePrioritarias)} pendientes ({Math.max(0, Math.round((100 - prioAchievedPct) * 10) / 10)}%)
                 </div>
               </div>
             </div>

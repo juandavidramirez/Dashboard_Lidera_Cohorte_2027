@@ -61,8 +61,8 @@ export const PanelAcademicProfile: React.FC<Props> = ({ candidates }) => {
 
     const total = candidates.length || 1;
     return [
-      { name: 'Licenciatura', cantidad: licenciatura, pct: Math.round((licenciatura / total) * 100), color: '#F2A900' },
-      { name: 'No Plazable', cantidad: noAplazable, pct: Math.round((noAplazable / total) * 100), color: '#E11D48' },
+      { name: 'Licenciatura', cantidad: licenciatura, pct: Math.round((licenciatura / total) * 100), color: '#2E9E82' },
+      { name: 'No Plazable', cantidad: noAplazable, pct: Math.round((noAplazable / total) * 100), color: '#64748B' },
       { name: 'Profesional', cantidad: profesional, pct: Math.round((profesional / total) * 100), color: '#152238' }
     ];
   }, [candidates]);
@@ -70,12 +70,9 @@ export const PanelAcademicProfile: React.FC<Props> = ({ candidates }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Chart 1: Nivel de Inglés */}
-      <div className="bg-white border-2 border-teal-600/40 rounded-2xl overflow-hidden flex flex-col shadow-2xs">
-        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-teal-700/50">
+      <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-black uppercase tracking-wider bg-teal-800 text-teal-200 px-2 py-0.5 rounded">
-              Nivel 3 — Distribución
-            </span>
             <Languages className="w-4 h-4 text-emerald-400" />
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
               Distribución por Nivel de Inglés (A1 - C2)
@@ -127,12 +124,9 @@ export const PanelAcademicProfile: React.FC<Props> = ({ candidates }) => {
       </div>
 
       {/* Chart 2: Tipo de Pregrado */}
-      <div className="bg-white border-2 border-teal-600/40 rounded-2xl overflow-hidden flex flex-col shadow-2xs">
-        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-teal-700/50">
+      <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+        <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-black uppercase tracking-wider bg-teal-800 text-teal-200 px-2 py-0.5 rounded">
-              Nivel 3 — Distribución
-            </span>
             <GraduationCap className="w-4 h-4 text-amber-400" />
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
               Tipo de Pregrado / Titulación

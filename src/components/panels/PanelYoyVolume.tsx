@@ -40,13 +40,10 @@ export const PanelYoyVolume: React.FC<Props> = ({
   }
 
   return (
-    <div className="bg-white border-2 border-indigo-300/80 rounded-2xl overflow-hidden flex flex-col shadow-2xs h-full">
+    <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs h-full">
       {/* Title Strip in Amber #F2A900 */}
       <div className="bg-[#F2A900] px-4 py-2 flex items-center justify-between border-b border-amber-300">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-wider bg-slate-900 text-amber-300 px-2 py-0.5 rounded shadow-2xs">
-            Nivel 2 — Panel Secundario
-          </span>
           <h2 className="text-xs font-black text-slate-900 uppercase tracking-wider">
             Panel C — Tendencia Interanual (YoY)
           </h2>

@@ -127,12 +127,9 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
       {/* 3 Main Geographic and University Charts for Tablero Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Panel 1: Geographic Distribution */}
-        <div className="bg-white border-2 border-teal-600/40 rounded-2xl overflow-hidden flex flex-col shadow-2xs">
-          <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-teal-700/50">
+        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+          <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-wider bg-teal-800 text-teal-200 px-2 py-0.5 rounded">
-                Nivel 3 — Distribución
-              </span>
               <MapPin className="w-4 h-4 text-emerald-400" />
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                 Distribución por Departamento
@@ -170,12 +167,9 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
         </div>
 
         {/* Panel 2: Top 10 Prioritized Universities (Horizontal Layout for legibility) */}
-        <div className="bg-white border-2 border-teal-600/40 rounded-2xl overflow-hidden flex flex-col shadow-2xs">
-          <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-teal-700/50">
+        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+          <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-wider bg-teal-800 text-teal-200 px-2 py-0.5 rounded">
-                Nivel 3 — Distribución
-              </span>
               <Award className="w-4 h-4 text-amber-400" />
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                 Top Universidades Priorizadas
@@ -227,12 +221,9 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
         </div>
 
         {/* Panel 3: Universities Summary Table */}
-        <div className="bg-white border-2 border-teal-600/40 rounded-2xl overflow-hidden flex flex-col shadow-2xs">
-          <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-teal-700/50">
+        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+          <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-wider bg-teal-800 text-teal-200 px-2 py-0.5 rounded">
-                Nivel 3 — Distribución
-              </span>
               <Building className="w-4 h-4 text-emerald-400" />
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                 Resumen de Conversión por Universidad

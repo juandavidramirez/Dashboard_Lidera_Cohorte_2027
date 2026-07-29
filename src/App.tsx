@@ -172,47 +172,73 @@ export default function App() {
         {/* Main Dashboard Content */}
         <main className="flex-1 min-w-0 space-y-6">
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Header Band KPI + Segmented Progress Bar */}
-              <KpiHeaderBand
-                eligibleCount={eligibleCount}
-                totalCandidatesCount={candidates.length}
-                totalGoal={totalGoalTarget}
-                yoyGrowthPct={14.2}
-                goalTarget={mainGoal}
-                candidates={candidates}
-              />
-
-              {/* 2x2 Panel Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Panel A: Eligibility Rate */}
-                <PanelEligibilityRate candidates={candidates} />
-
-                {/* Panel B: Profile Composition */}
-                <PanelProfileComposition
-                  stemCount={profileComp.stemCount}
-                  bilingualCount={profileComp.bilingualCount}
-                  generalCount={profileComp.generalCount}
-                  totalEligible={eligibleCount}
-                  totalApplicants={candidates.length}
+            <div className="space-y-8">
+              {/* Nivel 1: Indicadores Top-Line Prioritarios */}
+              <section className="space-y-4">
+                <KpiHeaderBand
+                  eligibleCount={eligibleCount}
+                  totalCandidatesCount={candidates.length}
+                  totalGoal={totalGoalTarget}
+                  yoyGrowthPct={14.2}
+                  goalTarget={mainGoal}
+                  candidates={candidates}
                 />
+              </section>
 
-                {/* Panel C: YoY Volume & Monthly Trend */}
-                <PanelYoyVolume
-                  yoyData={yoyStats}
-                  total2027={eligibleCount}
-                  total2026={Math.round(eligibleCount * 0.88)}
-                />
+              {/* Nivel 2: Dinámica Temporal y Canales de Atracción */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-3 border-b-2 border-amber-400 pb-2">
+                  <span className="bg-[#F2A900] text-slate-950 text-xs font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-2xs">
+                    Nivel 2
+                  </span>
+                  <h2 className="text-sm font-black text-[#152238] uppercase tracking-wide">
+                    Dinámica Temporal, Composición y Canales de Atracción
+                  </h2>
+                </div>
 
-                {/* Panel D: Channel Mix Trend */}
-                <PanelChannelMix candidates={candidates} />
-              </div>
+                {/* 2x2 Panel Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Panel A: Eligibility Rate */}
+                  <PanelEligibilityRate candidates={candidates} />
 
-              {/* Perfil Académico (Nivel de Inglés + Tipo de Pregrado) */}
-              <PanelAcademicProfile candidates={candidates} />
+                  {/* Panel B: Profile Composition */}
+                  <PanelProfileComposition
+                    stemCount={profileComp.stemCount}
+                    bilingualCount={profileComp.bilingualCount}
+                    generalCount={profileComp.generalCount}
+                    totalEligible={eligibleCount}
+                    totalApplicants={candidates.length}
+                  />
 
-              {/* Distribución Universidades (Geografía + Top 10 + Resumen Conversión) */}
-              <PanelUniversitiesDistribution candidates={candidates} universityMappings={universities} />
+                  {/* Panel C: YoY Volume & Monthly Trend */}
+                  <PanelYoyVolume
+                    yoyData={yoyStats}
+                    total2027={eligibleCount}
+                    total2026={Math.round(eligibleCount * 0.88)}
+                  />
+
+                  {/* Panel D: Channel Mix Trend */}
+                  <PanelChannelMix candidates={candidates} />
+                </div>
+              </section>
+
+              {/* Nivel 3: Perfil Académico y Distribución Geográfica */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-3 border-b-2 border-[#152238] pb-2">
+                  <span className="bg-[#152238] text-white text-xs font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-2xs">
+                    Nivel 3
+                  </span>
+                  <h2 className="text-sm font-black text-[#152238] uppercase tracking-wide">
+                    Perfil Académico, Idioma y Distribución Geográfica
+                  </h2>
+                </div>
+
+                {/* Perfil Académico (Nivel de Inglés + Tipo de Pregrado) */}
+                <PanelAcademicProfile candidates={candidates} />
+
+                {/* Distribución Universidades (Geografía + Top 10 + Resumen Conversión) */}
+                <PanelUniversitiesDistribution candidates={candidates} universityMappings={universities} />
+              </section>
             </div>
           )}
 
