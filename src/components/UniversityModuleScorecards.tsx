@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Candidate } from '../types';
-import { isCandidateEligible } from '../lib/metricsCalculator';
+import { isCandidateEligible, isPrioritariasUni, isTop13QsUni } from '../lib/metricsCalculator';
 import { Building2, Award, Star, CheckCircle2 } from 'lucide-react';
 
 interface Props {
@@ -21,9 +21,8 @@ export const UniversityModuleScorecards: React.FC<Props> = ({ candidates }) => {
 
       if (isCandidateEligible(c)) eligibleCount += 1;
 
-      const isTop13 = c.universidadTop13QS === 'SI' || Boolean(c.isTop13QS) ||
-        ['andes', 'nacional', 'javeriana', 'antioquia', 'icesi', 'norte', 'valle'].some(k => name.toLowerCase().includes(k));
-      const isPrio = c.universidadPriorizada === 'SI' || Boolean(c.isPrioritarias) || isTop13;
+      const isPrio = isPrioritariasUni(c);
+      const isTop13 = isTop13QsUni(c);
 
       if (isTop13) top13Count += 1;
       if (isPrio) prioritariaCount += 1;

@@ -459,6 +459,29 @@ export function calculateWeeklyChannelMixStats(candidates: Candidate[], isCumula
   });
 }
 
+export function isPrioritariasUni(c: Candidate): boolean {
+  const prioVal = String(c.universidadPriorizada || (c as any).isPrioritarias || '').trim().toLowerCase();
+  if (prioVal === 'si' || prioVal === 'sí' || prioVal === 'true') return true;
+  if (prioVal === 'no' || prioVal === 'false') return false;
+
+  // Fallback keyword check if field empty (Top 7 universities from Apps Script)
+  const uniName = (c.universityNormalized || c.universityRaw || '').toLowerCase();
+  const top7Keywords = ['andes', 'nacional', 'javeriana', 'antioquia', 'icesi', 'norte', 'valle'];
+  return top7Keywords.some(k => uniName.includes(k));
+}
+
+export function isTop13QsUni(c: Candidate): boolean {
+  const top13Val = String(c.universidadTop13QS || (c as any).isTop13QS || '').trim().toLowerCase();
+  if (top13Val === 'si' || top13Val === 'sí' || top13Val === 'true') return true;
+  if (top13Val === 'no' || top13Val === 'false') return false;
+
+  // Fallback keyword check if field empty (Top 13 QS from Apps Script)
+  if (isPrioritariasUni(c)) return true;
+  const uniName = (c.universityNormalized || c.universityRaw || '').toLowerCase();
+  const top13Keywords = ['sabana', 'rosario', 'bolivariana', 'eafit', 'externado', 'uis', 'industrial'];
+  return top13Keywords.some(k => uniName.includes(k));
+}
+
 // Calculate goals progress dynamically based on candidates dataset
 export function calculateSynchronizedGoals(goals: GoalTarget[], candidates: Candidate[]): GoalTarget[] {
   const baseGoals = (goals && goals.length >= 5) ? goals : INITIAL_GOAL_TARGETS;
@@ -466,13 +489,7 @@ export function calculateSynchronizedGoals(goals: GoalTarget[], candidates: Cand
   const totalCount = candidates.length;
   const profileComp = calculateProfileComposition(candidates);
 
-  const prioritizedCount = candidates.filter(c =>
-    c.universidadPriorizada === 'SI' ||
-    c.universidadTop13QS === 'SI' ||
-    ['andes', 'nacional', 'javeriana', 'antioquia', 'icesi', 'norte', 'valle'].some(k =>
-      (c.universityNormalized || c.universityRaw || '').toLowerCase().includes(k)
-    )
-  ).length;
+  const prioritizedCount = candidates.filter(c => isPrioritariasUni(c)).length;
 
   const refiereCount = candidates.filter(c =>
     (c.channel || c.fuenteInformacion || '').toLowerCase().includes('refiere')
@@ -522,19 +539,12 @@ export function calculateUniversityAndHpcMetrics(candidates: Candidate[]) {
   let totalHpc = 0;
   let eligibleHpc = 0;
 
-  const prioKeywords = ['andes', 'nacional', 'javeriana', 'antioquia', 'icesi', 'norte', 'valle', 'pedagógica', 'uis'];
-  const top13Keywords = [...prioKeywords, 'sabana', 'rosario', 'bolivariana', 'eafit', 'cauca', 'caldas', 'industrial'];
-
   candidates.forEach((c) => {
-    const uniName = (c.universityNormalized || c.universityRaw || '').toLowerCase();
-    
-    const isPrio = c.universidadPriorizada === 'SI' || Boolean((c as any).isPrioritarias) ||
-      prioKeywords.some(k => uniName.includes(k));
-    
-    const isTop13 = c.universidadTop13QS === 'SI' || Boolean((c as any).isTop13QS) || isPrio ||
-      top13Keywords.some(k => uniName.includes(k));
+    const isPrio = isPrioritariasUni(c);
+    const isTop13 = isTop13QsUni(c);
 
-    const isHpc = (c.hpc || '').toLowerCase() === 'si' || c.channel === 'Cultivación de HPC' || (c as any).isHpc === true;
+    const hpcVal = String(c.hpc || '').trim().toLowerCase();
+    const isHpc = hpcVal === 'si' || hpcVal === 'sí' || hpcVal === 'true' || c.channel === 'Cultivación de HPC' || (c as any).isHpc === true;
 
     if (isPrio) totalPrioritarias++;
     if (isTop13) totalTop13++;
