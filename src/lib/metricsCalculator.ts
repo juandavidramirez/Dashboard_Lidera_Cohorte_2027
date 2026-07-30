@@ -98,16 +98,18 @@ export function getCandidateMonth(cand: Candidate): string {
 
 // Check if candidate is eligible according to LIDERA rules or database flag
 export function isCandidateEligible(cand: Candidate): boolean {
-  if (cand.eligibility) {
-    const el = cand.eligibility.toLowerCase().trim();
-    if (el === 'elegible' || el === 'si' || el === 'sí') return true;
+  // Check explicit 'cumpleMinimos' or 'eligibility' from Sheets / Supabase first
+  const status = (cand.cumpleMinimos || cand.eligibility || '').toLowerCase().trim();
+  if (status) {
+    if (status.includes('no cumple') || status.includes('no elegible') || status === 'no') {
+      return false;
+    }
+    if (status.includes('cumple') || status.includes('elegible') || status === 'si' || status === 'sí') {
+      return true;
+    }
   }
-  if (cand.cumpleMinimos) {
-    const cm = cand.cumpleMinimos.toLowerCase().trim();
-    if (cm.includes('cumple') && !cm.includes('no cumple')) return true;
-    if (cm === 'si' || cm === 'sí') return true;
-  }
-  // Default rule evaluation if field is not explicit
+
+  // Fallback rule evaluation if field is not explicitly present or recognized
   const gpa = Number(cand.gpa || 0);
   const englishLevel = cand.englishLevel || 'A1';
   const isBilingual = cand.isBilingual || ['B2', 'C1', 'C2'].includes(englishLevel);

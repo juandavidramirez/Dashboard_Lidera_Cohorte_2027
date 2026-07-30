@@ -63,6 +63,10 @@ function candidateToRow(cand: Candidate) {
 // Map Supabase Row to Candidate
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToCandidate(row: any): Candidate {
+  const rawEligStr = String(row.eligibility || row.cumple_minimos || '').toLowerCase().trim();
+  const isNoEligible = rawEligStr.includes('no cumple') || rawEligStr.includes('no elegible') || rawEligStr === 'no';
+  const derivedEligibility: EligibilityStatus = isNoEligible ? 'No Elegible' : 'Elegible';
+
   return {
     id: row.id || row.id_primera_revision || `cand-${Math.random().toString(36).substr(2, 9)}`,
     fullName: row.full_name || row.nombre_completo || 'Candidato/a',
@@ -80,8 +84,8 @@ function rowToCandidate(row: any): Candidate {
     isStem: row.is_stem !== undefined ? Boolean(row.is_stem) : String(row.stem_clasificacion || row.stem || '').includes('STEM'),
     route: row.route || row.ruta || 'General / No Priorizado',
     channel: row.channel || row.canal_convocatoria || 'Otros',
-    eligibility: row.eligibility || row.cumple_minimos || 'Elegible',
-    ineligibilityReason: row.ineligibility_reason || row.motivo_no_cumplimiento || 'Ninguno (Es Elegible)',
+    eligibility: derivedEligibility,
+    ineligibilityReason: row.ineligibility_reason || row.motivo_no_cumplimiento || (isNoEligible ? 'No cumple mínimos' : 'Ninguno (Es Elegible)'),
     registrationDate: row.registration_date || row.fecha_creacion?.split('T')[0] || new Date().toISOString().split('T')[0],
     month: row.month || row.mes || 'Ene',
     notes: row.notes,
@@ -109,7 +113,7 @@ function rowToCandidate(row: any): Candidate {
     tipoPregrado: row.tipo_pregrado,
     enfoque: row.enfoque,
     canalConvocatoria: row.channel || row.canal_convocatoria,
-    cumpleMinimos: row.cumple_minimos || row.eligibility,
+    cumpleMinimos: row.cumple_minimos || row.eligibility || (isNoEligible ? 'No cumple mínimos' : 'Cumple mínimos'),
     motivoNoCumplimiento: row.motivo_no_cumplimiento || row.ineligibility_reason,
     rutaCalculada: row.route || row.ruta,
     edad: row.edad,
