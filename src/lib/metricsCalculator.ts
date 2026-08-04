@@ -96,6 +96,16 @@ export function getCandidateMonth(cand: Candidate): string {
   return 'Jul'; // Default month fallback if missing
 }
 
+// Check if form is completed (formCompleto === 'SI' or channel is non-empty)
+export function isFormCompleted(cand: Candidate): boolean {
+  if (cand.formCompleto !== undefined && cand.formCompleto !== null && String(cand.formCompleto).trim() !== '') {
+    const fc = String(cand.formCompleto).toLowerCase().trim();
+    return fc === 'si' || fc === 'sí' || fc === 'true' || fc === 'completo';
+  }
+  const channel = (cand.channel || cand.fuenteInformacion || cand.canalConvocatoria || '').trim();
+  return channel.length > 0;
+}
+
 // Check if candidate is eligible according to LIDERA rules or database flag
 export function isCandidateEligible(cand: Candidate): boolean {
   // Check explicit 'cumpleMinimos' or 'eligibility' from Sheets / Supabase first

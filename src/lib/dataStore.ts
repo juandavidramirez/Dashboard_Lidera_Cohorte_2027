@@ -37,7 +37,8 @@ function candidateToRow(cand: Candidate) {
     pago_estudios: cand.pagoEstudios || '',
     ultima_modificacion: cand.ultimaModificacion || null,
 
-    // Campos Transformados
+    // Campos Transformados V->AI
+    departamento_residencia: cand.departamentoResidencia || cand.department || '',
     is_stem: cand.isStem,
     stem_clasificacion: cand.stemClass || (cand.isStem ? 'STEM Priorizada' : 'NO'),
     uni_top13_qs: cand.universidadTop13QS || 'NO',
@@ -51,9 +52,10 @@ function candidateToRow(cand: Candidate) {
     edad: typeof cand.edad === 'number' ? cand.edad : null,
     month: cand.month,
     hpc: cand.hpc || 'No',
+    form_completo: cand.formCompleto || ((cand.channel || cand.fuenteInformacion) ? 'SI' : 'NO'),
 
     // Campos adicionales
-    department: cand.department || '',
+    department: cand.department || cand.departamentoResidencia || '',
     city: cand.city || '',
     registration_date: cand.registrationDate,
     notes: cand.notes || ''
@@ -67,6 +69,17 @@ function rowToCandidate(row: any): Candidate {
   const isNoEligible = rawEligStr.includes('no cumple') || rawEligStr.includes('no elegible') || rawEligStr === 'no';
   const derivedEligibility: EligibilityStatus = isNoEligible ? 'No Elegible' : 'Elegible';
 
+  const rawFormComp = String(row.form_completo || row.formCompleto || '').toUpperCase().trim();
+  let formCompleto = 'SI';
+  if (rawFormComp === 'NO' || rawFormComp === 'INCOMPLETO' || rawFormComp === 'FALSE') {
+    formCompleto = 'NO';
+  } else if (!rawFormComp) {
+    const ch = String(row.channel || row.fuente_informacion || row.canal_convocatoria || '').trim();
+    formCompleto = ch ? 'SI' : 'NO';
+  }
+
+  const deptRes = row.departamento_residencia || row.departamentoResidencia || row.department || row.departamento || '';
+
   return {
     id: row.id || row.id_primera_revision || `cand-${Math.random().toString(36).substr(2, 9)}`,
     fullName: row.full_name || row.nombre_completo || 'Candidato/a',
@@ -74,7 +87,8 @@ function rowToCandidate(row: any): Candidate {
     phone: row.phone || row.telefono || '',
     universityRaw: row.university_raw || row.universidad_pregrado || '',
     universityNormalized: row.university_normalized || row.universidad_pregrado || '',
-    department: row.department || '',
+    department: deptRes,
+    departamentoResidencia: deptRes,
     city: row.city || '',
     career: row.career || row.carrera_pregrado || '',
     graduationYear: Number(row.graduation_year || row.anio_graduacion || 2026),
@@ -106,7 +120,7 @@ function rowToCandidate(row: any): Candidate {
     pagoEstudios: row.pago_estudios,
     ultimaModificacion: row.ultima_modificacion,
 
-    // Campos Transformados V->AG
+    // Campos Transformados V->AI
     stemClass: row.stem_clasificacion || row.stem,
     universidadTop13QS: row.uni_top13_qs,
     universidadPriorizada: row.uni_prioritaria,
@@ -117,7 +131,8 @@ function rowToCandidate(row: any): Candidate {
     motivoNoCumplimiento: row.motivo_no_cumplimiento || row.ineligibility_reason,
     rutaCalculada: row.route || row.ruta,
     edad: row.edad,
-    hpc: row.hpc
+    hpc: row.hpc,
+    formCompleto: formCompleto
   };
 }
 

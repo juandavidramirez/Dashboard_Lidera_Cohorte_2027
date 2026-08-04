@@ -65,18 +65,20 @@ export interface Candidate {
   pagoEstudios?: string;
   ultimaModificacion?: string;
 
-  // Campos Transformados de Data_Raw_Conv (V->AG)
-  stemClass?: string;             // Col V: 'STEM Priorizada' | 'STEM No Priorizada' | 'NO'
-  universidadTop13QS?: string;   // Col W: 'SI' | 'NO'
-  universidadPriorizada?: string;// Col X: 'SI' | 'NO'
-  tipoPregrado?: string;          // Col Y: 'Profesional' | 'Licenciatura' | 'Carrera no plazable' | 'NO'
-  enfoque?: string;               // Col Z: 'STEM y Bilingüe' | 'STEM' | 'Bilingüe' | 'No STEM no Bilingüe'
-  canalConvocatoria?: string;     // Col AA: 'LIDERA en RRSS' | 'Refiere LIDERA' | 'Gira LIDERA' | 'Otros'
-  cumpleMinimos?: string;         // Col AB: 'Cumple mínimos' | 'No cumple mínimos'
-  motivoNoCumplimiento?: string;  // Col AC
-  rutaCalculada?: string;         // Col AD: 'Ruta Promisorios' | 'Ruta General' | 'N/A'
-  edad?: number | string;         // Col AE
-  hpc?: string;                   // Col AG: 'Si' | 'No'
+  // Campos Transformados V->AI
+  departamentoResidencia?: string;// Col V: Departamento de Residencia
+  stemClass?: string;             // Col W: 'STEM Priorizada' | 'STEM No Priorizada' | 'NO'
+  universidadTop13QS?: string;   // Col X: 'SI' | 'NO'
+  universidadPriorizada?: string;// Col Y: 'SI' | 'NO'
+  tipoPregrado?: string;          // Col Z: 'Profesional' | 'Licenciatura' | 'Carrera no plazable' | 'NO'
+  enfoque?: string;               // Col AA: 'STEM y Bilingüe' | 'STEM' | 'Bilingüe' | 'No STEM no Bilingüe'
+  canalConvocatoria?: string;     // Col AB: 'LIDERA en RRSS' | 'Refiere LIDERA' | 'Gira LIDERA' | 'Otros'
+  cumpleMinimos?: string;         // Col AC: 'Cumple mínimos' | 'No cumple mínimos'
+  motivoNoCumplimiento?: string;  // Col AD
+  rutaCalculada?: string;         // Col AE: 'Ruta Promisorios' | 'Ruta General' | 'N/A'
+  edad?: number | string;         // Col AF
+  hpc?: string;                   // Col AH: 'Si' | 'No'
+  formCompleto?: string;          // Col AI: 'SI' | 'NO'
 }
 
 export interface UniversityMapping {

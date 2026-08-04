@@ -4,15 +4,17 @@ import {
   Users,
   Building2,
   Target,
-  Sparkles
+  Sparkles,
+  FileX
 } from 'lucide-react';
 
-export type ActiveTab = 'overview' | 'candidates' | 'universities' | 'goals';
+export type ActiveTab = 'overview' | 'candidates' | 'incomplete_candidates' | 'universities' | 'goals';
 
 interface Props {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   candidateCount: number;
+  incompleteCandidateCount?: number;
   eligibleCount: number;
 }
 
@@ -20,6 +22,7 @@ export const Sidebar: React.FC<Props> = ({
   activeTab,
   setActiveTab,
   candidateCount,
+  incompleteCandidateCount = 0,
   eligibleCount
 }) => {
   const mainNavItems = [
@@ -31,9 +34,15 @@ export const Sidebar: React.FC<Props> = ({
     },
     {
       id: 'candidates',
-      label: 'Registros Formulario',
+      label: 'Registros completados formulario',
       icon: Users,
       badge: `${candidateCount}`
+    },
+    {
+      id: 'incomplete_candidates',
+      label: 'Registros incompletos formulario',
+      icon: FileX,
+      badge: `${incompleteCandidateCount}`
     }
   ];
 

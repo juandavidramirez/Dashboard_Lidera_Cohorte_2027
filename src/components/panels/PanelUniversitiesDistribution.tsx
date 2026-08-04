@@ -43,7 +43,10 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
     const deptMap = new Map<string, { total: number; eligible: number }>();
 
     candidates.forEach(c => {
-      const dept = c.department || 'Sin Departamento';
+      const rawDept = (c.departamentoResidencia || c.department || '').trim();
+      const dept = (!rawDept || rawDept === 'N/A' || rawDept === 'null' || rawDept === 'undefined')
+        ? 'Sin Departamento'
+        : rawDept;
       const cur = deptMap.get(dept) || { total: 0, eligible: 0 };
       cur.total += 1;
       if (isCandidateEligible(c)) {
@@ -132,17 +135,17 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-400" />
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                Distribución por Departamento
+                Distribución por Depto. Residencia
               </h3>
             </div>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded">
-              Ubicación Universidades
+              Residencia Candidatos
             </span>
           </div>
 
           <div className="p-4 flex-1 flex flex-col justify-between">
             <p className="text-[11px] text-slate-500 mb-2">
-              Principales departamentos por volumen de postulantes
+              Departamentos de residencia del candidato con mayor volumen de postulantes
             </p>
 
             <div className="h-64 w-full">

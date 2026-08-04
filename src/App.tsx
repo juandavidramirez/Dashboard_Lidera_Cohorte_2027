@@ -7,7 +7,9 @@ import {
   calculateMonthlyEligibilityStats,
   calculateYoyMonthlyStats,
   calculateChannelMixStats,
-  calculateSynchronizedGoals
+  calculateSynchronizedGoals,
+  isFormCompleted,
+  isCandidateEligible
 } from './lib/metricsCalculator';
 import { Header } from './components/Header';
 import { Sidebar, ActiveTab } from './components/Sidebar';
@@ -139,13 +141,21 @@ export default function App() {
     }
   };
 
-  // Dynamic Derived Metrics from Real Candidates Dataset (Supabase / DataStore)
-  const eligibleCount = useMemo(() => calculateEligibleCount(candidates), [candidates]);
-  const profileComp = useMemo(() => calculateProfileComposition(candidates), [candidates]);
-  const monthlyStats = useMemo(() => calculateMonthlyEligibilityStats(candidates), [candidates]);
-  const yoyStats = useMemo(() => calculateYoyMonthlyStats(candidates), [candidates]);
-  const channelStats = useMemo(() => calculateChannelMixStats(candidates), [candidates]);
-  const synchronizedGoals = useMemo(() => calculateSynchronizedGoals(goals, candidates), [goals, candidates]);
+  // Dynamic Derived Metrics from Real Candidates Dataset (Filtered by Completed Forms: form_completo === 'SI')
+  const completedCandidates = useMemo(() => candidates.filter(isFormCompleted), [candidates]);
+  const incompleteCandidates = useMemo(() => candidates.filter((c) => !isFormCompleted(c)), [candidates]);
+  const incompleteCandidatesCount = useMemo(() => incompleteCandidates.length, [incompleteCandidates]);
+  const potentialEligibleIncompleteCount = useMemo(
+    () => incompleteCandidates.filter(isCandidateEligible).length,
+    [incompleteCandidates]
+  );
+
+  const eligibleCount = useMemo(() => calculateEligibleCount(completedCandidates), [completedCandidates]);
+  const profileComp = useMemo(() => calculateProfileComposition(completedCandidates), [completedCandidates]);
+  const monthlyStats = useMemo(() => calculateMonthlyEligibilityStats(completedCandidates), [completedCandidates]);
+  const yoyStats = useMemo(() => calculateYoyMonthlyStats(completedCandidates), [completedCandidates]);
+  const channelStats = useMemo(() => calculateChannelMixStats(completedCandidates), [completedCandidates]);
+  const synchronizedGoals = useMemo(() => calculateSynchronizedGoals(goals, completedCandidates), [goals, completedCandidates]);
 
   const mainGoal = synchronizedGoals.find((g) => g.id === 'goal-1');
   const totalGoalTarget = mainGoal ? mainGoal.target2027 : 1000;
@@ -157,7 +167,7 @@ export default function App() {
         onSyncSheets={handleSyncSheets}
         onResetData={handleResetData}
         isSyncing={isSyncing}
-        totalCandidatesCount={candidates.length}
+        totalCandidatesCount={completedCandidates.length}
       />
 
       <div className="flex-1 flex flex-col md:flex-row w-full mx-auto p-4 md:p-6 gap-6">
@@ -165,7 +175,8 @@ export default function App() {
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          candidateCount={candidates.length}
+          candidateCount={completedCandidates.length}
+          incompleteCandidateCount={incompleteCandidates.length}
           eligibleCount={eligibleCount}
         />
 
@@ -177,11 +188,13 @@ export default function App() {
               <section className="space-y-4">
                 <KpiHeaderBand
                   eligibleCount={eligibleCount}
-                  totalCandidatesCount={candidates.length}
+                  totalCandidatesCount={completedCandidates.length}
+                  incompleteFormsCount={incompleteCandidatesCount}
+                  potentialEligibleIncompleteCount={potentialEligibleIncompleteCount}
                   totalGoal={totalGoalTarget}
                   yoyGrowthPct={14.2}
                   goalTarget={mainGoal}
-                  candidates={candidates}
+                  candidates={completedCandidates}
                 />
               </section>
 
@@ -199,7 +212,7 @@ export default function App() {
                 {/* 2x2 Panel Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Panel A: Eligibility Rate */}
-                  <PanelEligibilityRate candidates={candidates} />
+                  <PanelEligibilityRate candidates={completedCandidates} />
 
                   {/* Panel B: Profile Composition */}
                   <PanelProfileComposition
@@ -207,7 +220,7 @@ export default function App() {
                     bilingualCount={profileComp.bilingualCount}
                     generalCount={profileComp.generalCount}
                     totalEligible={eligibleCount}
-                    totalApplicants={candidates.length}
+                    totalApplicants={completedCandidates.length}
                   />
 
                   {/* Panel C: YoY Volume & Monthly Trend */}
@@ -218,7 +231,7 @@ export default function App() {
                   />
 
                   {/* Panel D: Channel Mix Trend */}
-                  <PanelChannelMix candidates={candidates} />
+                  <PanelChannelMix candidates={completedCandidates} />
                 </div>
               </section>
 
@@ -234,10 +247,10 @@ export default function App() {
                 </div>
 
                 {/* Perfil Académico (Nivel de Inglés + Tipo de Pregrado) */}
-                <PanelAcademicProfile candidates={candidates} />
+                <PanelAcademicProfile candidates={completedCandidates} />
 
                 {/* Distribución Universidades (Geografía + Top 10 + Resumen Conversión) */}
-                <PanelUniversitiesDistribution candidates={candidates} universityMappings={universities} />
+                <PanelUniversitiesDistribution candidates={completedCandidates} universityMappings={universities} />
               </section>
             </div>
           )}
@@ -245,7 +258,27 @@ export default function App() {
           {activeTab === 'candidates' && (
             <div className="space-y-6">
               <CandidateTable
-                candidates={candidates}
+                candidates={completedCandidates}
+                title="Registros Completados del Formulario"
+                subtitle="Candidatos que finalizaron exitosamente el formulario de postulación."
+                onUpdateCandidate={handleUpdateCandidate}
+                onDeleteCandidate={handleDeleteCandidate}
+                onBatchAction={handleBatchAction}
+                onSelectCandidate={(cand) => {
+                  setSelectedCandidate(cand);
+                  setIsDetailModalOpen(true);
+                }}
+              />
+            </div>
+          )}
+
+          {activeTab === 'incomplete_candidates' && (
+            <div className="space-y-6">
+              <CandidateTable
+                candidates={incompleteCandidates}
+                title="Registros Incompletos del Formulario"
+                subtitle="Postulantes iniciados con formulario pendiente por completar."
+                isIncompleteMode={true}
                 onUpdateCandidate={handleUpdateCandidate}
                 onDeleteCandidate={handleDeleteCandidate}
                 onBatchAction={handleBatchAction}
@@ -260,11 +293,11 @@ export default function App() {
           {activeTab === 'universities' && (
             <div className="space-y-6">
               {/* 4 Scorecards for Universities Module */}
-              <UniversityModuleScorecards candidates={candidates} />
+              <UniversityModuleScorecards candidates={completedCandidates} />
 
               {/* Normalización de Universidades */}
               <UniversityNormalization
-                candidates={candidates}
+                candidates={completedCandidates}
                 universities={universities}
                 onAddVariant={handleAddUniversityVariant}
               />
