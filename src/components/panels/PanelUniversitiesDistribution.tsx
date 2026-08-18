@@ -68,34 +68,73 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
     return list;
   }, [candidates]);
 
-  // 2. Top 10 Prioritized Universities (Horizontal orientation for perfect legibility)
-  const topPrioritizedUnis = useMemo(() => {
-    const uniMap = new Map<string, { total: number; eligible: number; isPrioritized: boolean }>();
+  // 2. Top 13 QS Universities (Exact 13 universities list and eligible totals)
+  const top13Stats = useMemo(() => {
+    const TOP_13_DEF = [
+      { name: 'Universidad Nacional de Colombia', keywords: ['nacional'] },
+      { name: 'Pontificia Universidad Javeriana', keywords: ['javeriana'] },
+      { name: 'Universidad de los Andes', keywords: ['andes'] },
+      { name: 'Universidad de Antioquia', keywords: ['antioquia'] },
+      { name: 'Universidad del Valle', keywords: ['valle'] },
+      { name: 'Universidad del Norte', keywords: ['norte'] },
+      { name: 'Universidad ICESI', keywords: ['icesi'] },
+      { name: 'Universidad Industrial de Santander', keywords: ['industrial', 'santander', 'uis'] },
+      { name: 'Universidad EAFIT', keywords: ['eafit'] },
+      { name: 'Universidad Externado de Colombia', keywords: ['externado'] },
+      { name: 'Universidad de La Sabana', keywords: ['sabana'] },
+      { name: 'Universidad Pontificia Bolivariana', keywords: ['bolivariana', 'upb'] },
+      { name: 'Universidad del Rosario', keywords: ['rosario'] },
+    ];
 
-    candidates.forEach(c => {
-      const name = c.universityNormalized || c.universityRaw || 'Universidad Desconocida';
-      const isPrio = c.universidadPriorizada === 'SI' || c.universidadTop13QS === 'SI' ||
-        ['andes', 'nacional', 'javeriana', 'antioquia', 'icesi', 'norte', 'valle'].some(k => name.toLowerCase().includes(k));
-      const cur = uniMap.get(name) || { total: 0, eligible: 0, isPrioritized: isPrio };
-      cur.total += 1;
-      if (isCandidateEligible(c)) {
-        cur.eligible += 1;
-      }
-      if (isPrio) cur.isPrioritized = true;
-      uniMap.set(name, cur);
+    const map = new Map<string, { total: number; eligible: number; canonicalName: string }>();
+    TOP_13_DEF.forEach(u => {
+      map.set(u.name, { total: 0, eligible: 0, canonicalName: u.name });
     });
 
-    return Array.from(uniMap.entries())
-      .map(([name, val]) => ({
-        name: name.length > 28 ? name.substring(0, 26) + '...' : name,
-        fullName: name,
-        total: val.total,
-        eligible: val.eligible,
-        isPrioritized: val.isPrioritized,
-        conversion: val.total > 0 ? Math.round((val.eligible / val.total) * 100) : 0
+    let totalEligibleTop13 = 0;
+    let totalApplicantsTop13 = 0;
+
+    candidates.forEach(c => {
+      const rawName = (c.universityNormalized || c.universityRaw || '').toLowerCase();
+      let matchedUni: string | null = null;
+      for (const def of TOP_13_DEF) {
+        if (def.keywords.some(k => rawName.includes(k))) {
+          matchedUni = def.name;
+          break;
+        }
+      }
+      if (!matchedUni && (c.universidadTop13QS === 'SI' || (c as any).isTop13QS)) {
+        matchedUni = 'Universidad Nacional de Colombia';
+      }
+
+      if (matchedUni) {
+        const item = map.get(matchedUni)!;
+        item.total += 1;
+        const isElig = isCandidateEligible(c);
+        if (isElig) {
+          item.eligible += 1;
+          totalEligibleTop13 += 1;
+        }
+        totalApplicantsTop13 += 1;
+      }
+    });
+
+    const list = Array.from(map.values())
+      .map(item => ({
+        name: item.canonicalName.length > 25 ? item.canonicalName.substring(0, 23) + '...' : item.canonicalName,
+        fullName: item.canonicalName,
+        total: item.total,
+        eligible: item.eligible,
+        conversion: item.total > 0 ? Math.round((item.eligible / item.total) * 100) : 0
       }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
+      .sort((a, b) => b.total - a.total);
+
+    return {
+      list,
+      totalEligibleTop13,
+      totalApplicantsTop13,
+      conversionPct: totalApplicantsTop13 > 0 ? Math.round((totalEligibleTop13 / totalApplicantsTop13) * 100) : 0
+    };
   }, [candidates]);
 
   // 3. University Summary Table
@@ -169,43 +208,59 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
           </div>
         </div>
 
-        {/* Panel 2: Top 10 Prioritized Universities (Horizontal Layout for legibility) */}
+        {/* Panel 2: Top 13 QS Universities (Horizontal Layout for legibility) */}
         <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
           <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-400" />
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                Top Universidades Priorizadas
+                Top Universidades Priorizadas (Top 13 QS)
               </h3>
             </div>
             <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded">
-              Ranking QS / Estratégicas
+              {top13Stats.totalEligibleTop13} Elegibles / {top13Stats.totalApplicantsTop13} Total
             </span>
           </div>
 
           <div className="p-4 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2 bg-amber-50/70 p-2.5 rounded-lg border border-amber-200/80">
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">
+                  Candidatos Elegibles (Top 13 QS)
+                </span>
+                <div className="text-xl font-extrabold text-[#152238] mt-0.5">
+                  {top13Stats.totalEligibleTop13} <span className="text-xs font-semibold text-slate-500">de {top13Stats.totalApplicantsTop13} postulantes ({top13Stats.conversionPct}%)</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
+                  13 Universidades
+                </span>
+              </div>
+            </div>
+
             <p className="text-[11px] text-slate-500 mb-2">
-              Top 10 instituciones con mayor participación (orientación horizontal)
+              Desglose exacto de las 13 instituciones Top QS requeridas
             </p>
 
-            <div className="h-64 w-full">
+            <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={topPrioritizedUnis}
+                  data={top13Stats.list}
                   layout="vertical"
                   margin={{ top: 5, right: 15, left: 5, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis type="number" tick={{ fontSize: 10 }} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={120} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={130} />
                   <Tooltip
                     formatter={(val: number, name: string) => [`${val} postulantes`, name]}
                     labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.fullName || label}
                     contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
                   />
                   <Bar dataKey="total" fill="#152238" name="Postulantes" radius={[0, 4, 4, 0]}>
-                    {topPrioritizedUnis.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.isPrioritized ? '#F2A900' : '#152238'} />
+                    {top13Stats.list.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.eligible > 0 ? '#F2A900' : '#152238'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -214,10 +269,10 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
 
             <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#F2A900]" /> Priorizada / QS Top 13
+                <span className="w-2 h-2 rounded-full bg-[#F2A900]" /> Con Elegibles
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#152238]" /> Otras Universidades
+                <span className="w-2 h-2 rounded-full bg-[#152238]" /> Total Postulantes (Top 13 QS)
               </span>
             </div>
           </div>
