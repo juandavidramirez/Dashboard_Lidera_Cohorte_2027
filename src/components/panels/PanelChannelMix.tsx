@@ -146,12 +146,12 @@ export const PanelChannelMix: React.FC<Props> = ({
               <Users className="w-3 h-3 text-[#152238]" />
               <span>Refiere LIDERA</span>
             </div>
-            <div className="flex items-center gap-1 text-emerald-900 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-              <Share2 className="w-3 h-3 text-[#2E9E82]" />
+            <div className="flex items-center gap-1 text-amber-900 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+              <Share2 className="w-3 h-3 text-[#D97706]" />
               <span>RRSS LIDERA</span>
             </div>
-            <div className="flex items-center gap-1 text-purple-900 bg-purple-50 px-2 py-1 rounded border border-purple-200">
-              <Compass className="w-3 h-3 text-purple-700" />
+            <div className="flex items-center gap-1 text-emerald-900 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+              <Compass className="w-3 h-3 text-[#2E9E82]" />
               <span>Gira LIDERA</span>
             </div>
           </div>
@@ -205,9 +205,9 @@ export const PanelChannelMix: React.FC<Props> = ({
                   type="monotone"
                   dataKey="rrssCount"
                   name="LIDERA en RRSS"
-                  stroke="#64748B"
+                  stroke="#D97706"
                   strokeWidth={3}
-                  dot={{ r: 4, fill: '#64748B', strokeWidth: 2, stroke: '#FFFFFF' }}
+                  dot={{ r: 4, fill: '#D97706', strokeWidth: 2, stroke: '#FFFFFF' }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -238,7 +238,7 @@ export const PanelChannelMix: React.FC<Props> = ({
                   }}
                   contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
                 />
-                <Bar dataKey="rrss" name="LIDERA en RRSS" stackId="a" fill="#CBD5E1" />
+                <Bar dataKey="rrss" name="LIDERA en RRSS" stackId="a" fill="#D97706" />
                 <Bar dataKey="gira" name="Gira LIDERA" stackId="a" fill="#2E9E82" />
                 <Bar dataKey="refiere" name="Refiere LIDERA" stackId="a" fill="#152238" radius={[3, 3, 0, 0]} />
               </BarChart>
