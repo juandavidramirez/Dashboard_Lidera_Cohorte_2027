@@ -178,7 +178,7 @@ export const PanelEligibilityRate: React.FC<Props> = ({
                 : 'Análisis centrado estrictamente en la población NO ELEGIBLE'}
             </p>
           </div>
-          <div className="flex items-center gap-2.5 text-[10px]">
+          <div className="flex items-center gap-2.5 text-[10px] flex-wrap">
             {activeTab === 'rate' ? (
               <>
                 <span className="flex items-center gap-1 font-semibold text-slate-700">
@@ -191,10 +191,13 @@ export const PanelEligibilityRate: React.FC<Props> = ({
             ) : (
               <>
                 <span className="flex items-center gap-1 font-semibold text-slate-700">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Sin Enfoque
+                  <span className="w-2 h-2 rounded-xs bg-amber-500" /> Sin Enfoque
                 </span>
                 <span className="flex items-center gap-1 font-semibold text-slate-700">
-                  <span className="w-2 h-2 rounded-full bg-slate-400" /> GPA &lt; 3.5
+                  <span className="w-2 h-2 rounded-xs bg-rose-400" /> GPA &lt; 3.5
+                </span>
+                <span className="flex items-center gap-1 font-semibold text-slate-700">
+                  <span className="w-2 h-2 rounded-xs bg-slate-400" /> Otros motivos
                 </span>
               </>
             )}
@@ -354,6 +357,24 @@ export const PanelEligibilityRate: React.FC<Props> = ({
                   </span>
                 </div>
 
+                {/* Fixed & always visible legend for ineligibility causes */}
+                <div className="bg-slate-50 border border-slate-200/90 rounded-lg px-3 py-2 flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
+                    Leyenda de Motivos:
+                  </span>
+                  <div className="flex items-center gap-3 flex-wrap text-[11px]">
+                    <span className="flex items-center gap-1.5 font-bold text-amber-900 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300">
+                      <span className="w-2.5 h-2.5 rounded-xs bg-amber-500 shadow-2xs" /> Sin Enfoque (Inglés B2+ / STEM)
+                    </span>
+                    <span className="flex items-center gap-1.5 font-bold text-rose-900 bg-rose-100/70 px-2 py-0.5 rounded border border-rose-300">
+                      <span className="w-2.5 h-2.5 rounded-xs bg-rose-400 shadow-2xs" /> GPA &lt; 3.5
+                    </span>
+                    <span className="flex items-center gap-1.5 font-bold text-slate-700 bg-slate-200/70 px-2 py-0.5 rounded border border-slate-300">
+                      <span className="w-2.5 h-2.5 rounded-xs bg-slate-400 shadow-2xs" /> Otros motivos
+                    </span>
+                  </div>
+                </div>
+
                 <div className="space-y-1.5 pt-1">
                   {displayItems.map((stat) => {
                     const label = stat.label || stat.weekKey;
@@ -379,20 +400,23 @@ export const PanelEligibilityRate: React.FC<Props> = ({
                         <span className="w-16 font-bold text-slate-700 text-[10px] truncate">{label}</span>
                         <div className="flex-1 h-4 bg-slate-100 rounded-sm overflow-hidden flex border border-slate-200 text-[9px] font-bold">
                           <div
-                            className="bg-amber-500 text-white flex items-center justify-center"
+                            className="bg-amber-500 text-white flex items-center justify-center transition-all"
                             style={{ width: `${enfoquePct}%` }}
+                            title={`Sin Enfoque (Inglés B2+ / STEM): ${enfoquePct}% (${stat.ineligibleReasonEnfoque || 0} candidatos)`}
                           >
                             {enfoquePct > 15 && `${enfoquePct}% Sin Enfoque`}
                           </div>
                           <div
-                            className="bg-rose-400 text-white flex items-center justify-center"
+                            className="bg-rose-400 text-white flex items-center justify-center transition-all"
                             style={{ width: `${gpaPct}%` }}
+                            title={`GPA < 3.5: ${gpaPct}% (${stat.ineligibleReasonGpa || 0} candidatos)`}
                           >
                             {gpaPct > 15 && `${gpaPct}% GPA`}
                           </div>
                           <div
-                            className="bg-slate-400 text-white flex items-center justify-center"
+                            className="bg-slate-400 text-white flex items-center justify-center transition-all"
                             style={{ width: `${otherPct}%` }}
+                            title={`Otros motivos: ${otherPct}% (${stat.ineligibleReasonOther || 0} candidatos)`}
                           >
                             {otherPct > 10 && `${otherPct}%`}
                           </div>
