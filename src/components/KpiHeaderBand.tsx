@@ -101,17 +101,22 @@ export const KpiHeaderBand: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Total Postulantes (Métrica discreta) */}
+              {/* Total Postulantes con Meta de 1500 */}
               <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
                   Total Postulantes
                 </span>
                 <div className="mt-1">
-                  <span className="text-2xl font-black text-[#152238]">
-                    {totalApps.toLocaleString()}
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
-                    Postulaciones registradas
+                  <div className="flex items-baseline gap-1 flex-wrap">
+                    <span className="text-2xl font-black text-[#152238]">
+                      {totalApps.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-bold text-slate-600">
+                      / 1,500
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-600 font-extrabold block mt-0.5">
+                    {Math.min(100, Math.round((totalApps / 1500) * 1000) / 10)}% de la meta (1.5k)
                   </span>
                 </div>
               </div>
