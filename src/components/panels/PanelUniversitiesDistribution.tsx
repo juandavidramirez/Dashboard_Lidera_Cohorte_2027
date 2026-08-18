@@ -138,31 +138,67 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
     };
   }, [candidates]);
 
-  // 3. University Summary Table
-  const universitySummaryList = useMemo(() => {
-    const uniMap = new Map<string, { total: number; eligible: number; isPrioritized: boolean }>();
+  // 3. Prioritized 7 Universities Stats (Replacing generic summary with Top 7 prioritized breakdown matching Top 13 pattern)
+  const prioritized7Stats = useMemo(() => {
+    const PRIORITIZED_7_DEF = [
+      { name: 'Universidad Nacional de Colombia', keywords: ['nacional'] },
+      { name: 'Pontificia Universidad Javeriana', keywords: ['javeriana'] },
+      { name: 'Universidad de los Andes', keywords: ['andes'] },
+      { name: 'Universidad de Antioquia', keywords: ['antioquia'] },
+      { name: 'Universidad del Valle', keywords: ['valle'] },
+      { name: 'Universidad del Norte', keywords: ['norte'] },
+      { name: 'Universidad ICESI', keywords: ['icesi'] },
+    ];
 
-    candidates.forEach(c => {
-      const name = c.universityNormalized || c.universityRaw || 'Otras';
-      const isPrio = c.universidadPriorizada === 'SI' || c.universidadTop13QS === 'SI';
-      const cur = uniMap.get(name) || { total: 0, eligible: 0, isPrioritized: isPrio };
-      cur.total += 1;
-      if (isCandidateEligible(c)) {
-        cur.eligible += 1;
-      }
-      if (isPrio) cur.isPrioritized = true;
-      uniMap.set(name, cur);
+    const map = new Map<string, { total: number; eligible: number; canonicalName: string }>();
+    PRIORITIZED_7_DEF.forEach(u => {
+      map.set(u.name, { total: 0, eligible: 0, canonicalName: u.name });
     });
 
-    return Array.from(uniMap.entries())
-      .map(([name, val]) => ({
-        name,
-        total: val.total,
-        eligible: val.eligible,
-        isPrioritized: val.isPrioritized,
-        conversionRate: val.total > 0 ? Math.round((val.eligible / val.total) * 100) : 0
+    let totalEligiblePrio7 = 0;
+    let totalApplicantsPrio7 = 0;
+
+    candidates.forEach(c => {
+      const rawName = (c.universityNormalized || c.universityRaw || '').toLowerCase();
+      let matchedUni: string | null = null;
+      for (const def of PRIORITIZED_7_DEF) {
+        if (def.keywords.some(k => rawName.includes(k))) {
+          matchedUni = def.name;
+          break;
+        }
+      }
+      if (!matchedUni && (c.universidadPriorizada === 'SI' || c.universidadTop13QS === 'SI') && rawName.includes('nacional')) {
+        matchedUni = 'Universidad Nacional de Colombia';
+      }
+
+      if (matchedUni) {
+        const item = map.get(matchedUni)!;
+        item.total += 1;
+        const isElig = isCandidateEligible(c);
+        if (isElig) {
+          item.eligible += 1;
+          totalEligiblePrio7 += 1;
+        }
+        totalApplicantsPrio7 += 1;
+      }
+    });
+
+    const list = Array.from(map.values())
+      .map(item => ({
+        name: item.canonicalName.length > 25 ? item.canonicalName.substring(0, 23) + '...' : item.canonicalName,
+        fullName: item.canonicalName,
+        total: item.total,
+        eligible: item.eligible,
+        conversion: item.total > 0 ? Math.round((item.eligible / item.total) * 100) : 0
       }))
       .sort((a, b) => b.total - a.total);
+
+    return {
+      list,
+      totalEligiblePrio7,
+      totalApplicantsPrio7,
+      conversionPct: totalApplicantsPrio7 > 0 ? Math.round((totalEligiblePrio7 / totalApplicantsPrio7) * 100) : 0
+    };
   }, [candidates]);
 
   return (
@@ -281,60 +317,64 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
           </div>
         </div>
 
-        {/* Panel 3: Universities Summary Table */}
+        {/* Panel 3: Prioritized 7 Universities (Horizontal Layout matching Panel 2) */}
         <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs h-full">
           <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
-              <Building className="w-4 h-4 text-emerald-400" />
+              <Award className="w-4 h-4 text-emerald-400" />
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                Resumen de Conversión por Universidad
+                Universidades Priorizadas (Top 7)
               </h3>
             </div>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded">
-              Elegibles & Conversión
+              {prioritized7Stats.totalEligiblePrio7} Elegibles / {prioritized7Stats.totalApplicantsPrio7} Total
             </span>
           </div>
 
           <div className="p-4 flex-1 flex flex-col justify-between">
-            <div className="mb-2 bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200 text-xs font-bold text-slate-700 flex justify-between items-center">
-              <span>Listado Completo de Universidades</span>
-              <span className="text-[10px] text-slate-500 font-mono">Total: {universitySummaryList.length}</span>
+            <div className="flex items-center justify-between mb-2 bg-emerald-50/70 px-3 py-1.5 rounded-md border border-emerald-200 text-xs">
+              <span className="font-bold text-slate-700">
+                Elegibles Top 7: <strong className="text-[#152238]">{prioritized7Stats.totalEligiblePrio7}</strong> / {prioritized7Stats.totalApplicantsPrio7} ({prioritized7Stats.conversionPct}%)
+              </span>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                7 Univ.
+              </span>
             </div>
 
-            <div className="overflow-y-auto h-[440px] text-xs pr-1">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase font-bold text-slate-500 sticky top-0">
-                    <th className="py-2 px-2">Universidad</th>
-                    <th className="py-2 px-2 text-center">Post.</th>
-                    <th className="py-2 px-2 text-center">Eleg.</th>
-                    <th className="py-2 px-2 text-right">Conv. %</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-[11px] font-medium text-slate-700">
-                  {universitySummaryList.map((uni, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="py-2 px-2 font-bold text-slate-800 truncate max-w-[130px]" title={uni.name}>
-                        {uni.name}
-                        {uni.isPrioritized && (
-                          <span className="ml-1 text-[9px] text-amber-600 font-normal">(Prio)</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-2 text-center font-mono">{uni.total}</td>
-                      <td className="py-2 px-2 text-center font-mono font-bold text-[#2E9E82]">{uni.eligible}</td>
-                      <td className="py-2 px-2 text-right font-mono font-bold text-slate-900">
-                        {uni.conversionRate}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <p className="text-[11px] text-slate-500 mb-2">
+              Desglose y conversión de las 7 instituciones priorizadas (incluyendo sin data)
+            </p>
+
+            <div className="h-[440px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={prioritized7Stats.list}
+                  layout="vertical"
+                  margin={{ top: 5, right: 15, left: 5, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis type="number" tick={{ fontSize: 10 }} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={130} interval={0} />
+                  <Tooltip
+                    formatter={(val: number, name: string) => [`${val} postulantes`, name]}
+                    labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.fullName || label}
+                    contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
+                  />
+                  <Bar dataKey="total" fill="#152238" name="Postulantes" radius={[0, 4, 4, 0]}>
+                    {prioritized7Stats.list.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.eligible > 0 ? '#2E9E82' : '#152238'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
-            <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400">
-              <span>Muestra {universitySummaryList.length} universidades</span>
-              <span className="font-semibold text-[#2E9E82] flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Datos consolidados
+            <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#2E9E82]" /> Con Elegibles (Top 7)
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#152238]" /> Total Postulantes
               </span>
             </div>
           </div>

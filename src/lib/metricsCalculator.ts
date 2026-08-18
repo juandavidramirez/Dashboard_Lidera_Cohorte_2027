@@ -19,7 +19,7 @@ export const WEEK_DEFINITIONS = [
   { key: 'Semana 4', label: 'Sem 4', range: '18 ago – 24 ago' },
   { key: 'Semana 5', label: 'Sem 5', range: '25 ago – 31 ago' },
   { key: 'Semana 6', label: 'Sem 6', range: '1 sep – 7 sep' },
-  { key: 'Semana 7', label: 'Sem 7', range: '8 sep – 14 sep' }
+  { key: 'Semana 7', label: 'Sem 7', range: '8 sep – 13 sep' }
 ];
 
 export function getCandidateWeekKey(cand: Candidate, index: number): string {

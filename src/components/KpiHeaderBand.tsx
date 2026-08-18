@@ -153,7 +153,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs flex-wrap gap-2">
-            <span className="text-slate-600 font-medium text-[11px] sm:text-xs">Fecha de cierre: <strong className="text-slate-900 font-extrabold">6 de Septiembre</strong></span>
+            <span className="text-slate-600 font-medium text-[11px] sm:text-xs">Fecha de cierre: <strong className="text-slate-900 font-extrabold">13 de Septiembre</strong></span>
             
             {/* ENHANCED ALERT */}
             {achievedPct >= 80 ? (
