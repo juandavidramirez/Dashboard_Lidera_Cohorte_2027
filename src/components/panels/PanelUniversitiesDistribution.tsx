@@ -57,13 +57,14 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
 
     const list = Array.from(deptMap.entries())
       .map(([dept, val]) => ({
-        department: dept,
+        department: dept.length > 20 ? dept.substring(0, 18) + '...' : dept,
+        fullDepartment: dept,
         total: val.total,
         eligible: val.eligible,
         conversion: val.total > 0 ? Math.round((val.eligible / val.total) * 100) : 0
       }))
       .sort((a, b) => b.total - a.total)
-      .slice(0, 8); // Top 8 departments
+      .slice(0, 13); // Top 13 departments to match Top 13 scale
 
     return list;
   }, [candidates]);
@@ -169,7 +170,7 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
       {/* 3 Main Geographic and University Charts for Tablero Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Panel 1: Geographic Distribution */}
-        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs h-full">
           <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-400" />
@@ -183,11 +184,15 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
           </div>
 
           <div className="p-4 flex-1 flex flex-col justify-between">
+            <div className="mb-2 bg-emerald-50/70 px-3 py-1.5 rounded-md border border-emerald-200 text-xs text-emerald-900 font-bold">
+              Top Departamentos de Procedencia
+            </div>
+
             <p className="text-[11px] text-slate-500 mb-2">
-              Departamentos de residencia del candidato con mayor volumen de postulantes
+              Departamentos de residencia del candidato con mayor volumen
             </p>
 
-            <div className="h-64 w-full">
+            <div className="h-[440px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={departmentData}
@@ -196,20 +201,25 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis type="number" tick={{ fontSize: 10 }} />
-                  <YAxis dataKey="department" type="category" tick={{ fontSize: 10 }} width={80} />
+                  <YAxis dataKey="department" type="category" tick={{ fontSize: 9 }} width={100} interval={0} />
                   <Tooltip
-                    formatter={(val: number) => [`${val} postulantes`, 'Total']}
+                    formatter={(val: number, name: string, entry: any) => [`${val} postulantes`, entry?.payload?.fullDepartment || 'Departamento']}
                     contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
                   />
                   <Bar dataKey="total" fill="#2E9E82" radius={[0, 4, 4, 0]} name="Postulantes" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
+
+            <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
+              <span>Departamentos activos</span>
+              <span className="font-semibold text-[#2E9E82]">Cobertura Nacional</span>
+            </div>
           </div>
         </div>
 
         {/* Panel 2: Top 13 QS Universities (Horizontal Layout for legibility) */}
-        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs h-full">
           <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-400" />
@@ -223,27 +233,20 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
           </div>
 
           <div className="p-4 flex-1 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2 bg-amber-50/70 p-2.5 rounded-lg border border-amber-200/80">
-              <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">
-                  Candidatos Elegibles (Top 13 QS)
-                </span>
-                <div className="text-xl font-extrabold text-[#152238] mt-0.5">
-                  {top13Stats.totalEligibleTop13} <span className="text-xs font-semibold text-slate-500">de {top13Stats.totalApplicantsTop13} postulantes ({top13Stats.conversionPct}%)</span>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
-                  13 Universidades
-                </span>
-              </div>
+            <div className="flex items-center justify-between mb-2 bg-amber-50/70 px-3 py-1.5 rounded-md border border-amber-200 text-xs">
+              <span className="font-bold text-slate-700">
+                Elegibles Top 13 QS: <strong className="text-[#152238]">{top13Stats.totalEligibleTop13}</strong> / {top13Stats.totalApplicantsTop13} ({top13Stats.conversionPct}%)
+              </span>
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                13 Univ.
+              </span>
             </div>
 
             <p className="text-[11px] text-slate-500 mb-2">
-              Desglose exacto de las 13 instituciones Top QS requeridas
+              Desglose de las 13 instituciones Top QS (incluyendo sin data)
             </p>
 
-            <div className="h-56 w-full">
+            <div className="h-[440px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={top13Stats.list}
@@ -252,7 +255,7 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis type="number" tick={{ fontSize: 10 }} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={130} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={130} interval={0} />
                   <Tooltip
                     formatter={(val: number, name: string) => [`${val} postulantes`, name]}
                     labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.fullName || label}
@@ -279,7 +282,7 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
         </div>
 
         {/* Panel 3: Universities Summary Table */}
-        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col shadow-2xs h-full">
           <div className="bg-[#152238] px-4 py-2 flex items-center justify-between border-b border-slate-700">
             <div className="flex items-center gap-2">
               <Building className="w-4 h-4 text-emerald-400" />
@@ -292,29 +295,34 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
             </span>
           </div>
 
-          <div className="p-3 flex-1 flex flex-col justify-between">
-            <div className="overflow-y-auto max-h-60 text-xs">
+          <div className="p-4 flex-1 flex flex-col justify-between">
+            <div className="mb-2 bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200 text-xs font-bold text-slate-700 flex justify-between items-center">
+              <span>Listado Completo de Universidades</span>
+              <span className="text-[10px] text-slate-500 font-mono">Total: {universitySummaryList.length}</span>
+            </div>
+
+            <div className="overflow-y-auto h-[440px] text-xs pr-1">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase font-bold text-slate-500">
-                    <th className="py-1.5 px-2">Universidad</th>
-                    <th className="py-1.5 px-2 text-center">Post.</th>
-                    <th className="py-1.5 px-2 text-center">Eleg.</th>
-                    <th className="py-1.5 px-2 text-right">Conv. %</th>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase font-bold text-slate-500 sticky top-0">
+                    <th className="py-2 px-2">Universidad</th>
+                    <th className="py-2 px-2 text-center">Post.</th>
+                    <th className="py-2 px-2 text-center">Eleg.</th>
+                    <th className="py-2 px-2 text-right">Conv. %</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[11px] font-medium text-slate-700">
-                  {universitySummaryList.slice(0, 10).map((uni, idx) => (
+                  {universitySummaryList.map((uni, idx) => (
                     <tr key={idx} className="hover:bg-slate-50">
-                      <td className="py-1.5 px-2 font-bold text-slate-800 truncate max-w-[120px]">
+                      <td className="py-2 px-2 font-bold text-slate-800 truncate max-w-[130px]" title={uni.name}>
                         {uni.name}
                         {uni.isPrioritized && (
                           <span className="ml-1 text-[9px] text-amber-600 font-normal">(Prio)</span>
                         )}
                       </td>
-                      <td className="py-1.5 px-2 text-center font-mono">{uni.total}</td>
-                      <td className="py-1.5 px-2 text-center font-mono font-bold text-[#2E9E82]">{uni.eligible}</td>
-                      <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-900">
+                      <td className="py-2 px-2 text-center font-mono">{uni.total}</td>
+                      <td className="py-2 px-2 text-center font-mono font-bold text-[#2E9E82]">{uni.eligible}</td>
+                      <td className="py-2 px-2 text-right font-mono font-bold text-slate-900">
                         {uni.conversionRate}%
                       </td>
                     </tr>
