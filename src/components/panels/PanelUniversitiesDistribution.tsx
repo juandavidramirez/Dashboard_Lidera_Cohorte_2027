@@ -9,6 +9,40 @@ interface Props {
   universityMappings?: UniversityMapping[];
 }
 
+// Custom Tooltip for Department Distribution (Stacked: Elegibles + No Elegibles)
+const CustomDepartmentTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0]?.payload;
+    if (!data) return null;
+    return (
+      <div className="bg-slate-900 text-white p-3 rounded-lg shadow-xl text-xs border border-slate-700 max-w-[280px]">
+        <p className="font-extrabold text-white mb-2 border-b border-slate-700 pb-1 text-[11px] leading-tight">
+          {data.fullDepartment}
+        </p>
+        <div className="space-y-1.5 text-[11px]">
+          <div className="flex justify-between items-center text-slate-300">
+            <span className="font-medium">Total Postulantes:</span>
+            <span className="font-black text-white">{data.total.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center text-emerald-400">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-2.5 h-2.5 rounded-xs bg-[#2E9E82]" /> Elegibles:
+            </span>
+            <span className="font-bold">{data.eligible.toLocaleString()} ({data.conversion}%)</span>
+          </div>
+          <div className="flex justify-between items-center text-slate-300">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-2.5 h-2.5 rounded-xs bg-[#64748B]" /> No Elegibles:
+            </span>
+            <span className="font-bold">{data.notEligible.toLocaleString()} ({100 - data.conversion}%)</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) => {
   // 0. University KPI summary stats (no redundancy with main dashboard)
   const universityStats = useMemo(() => {
@@ -38,7 +72,7 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
     };
   }, [candidates]);
 
-  // 1. Geographic distribution by department
+  // 1. Geographic distribution by department (Top 12 individual + 13th 'Otros' consolidating the rest)
   const departmentData = useMemo(() => {
     const deptMap = new Map<string, { total: number; eligible: number }>();
 
@@ -55,18 +89,54 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
       deptMap.set(dept, cur);
     });
 
-    const list = Array.from(deptMap.entries())
-      .map(([dept, val]) => ({
-        department: dept.length > 20 ? dept.substring(0, 18) + '...' : dept,
-        fullDepartment: dept,
-        total: val.total,
-        eligible: val.eligible,
-        conversion: val.total > 0 ? Math.round((val.eligible / val.total) * 100) : 0
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 13); // Top 13 departments to match Top 13 scale
+    const fullSortedList = Array.from(deptMap.entries())
+      .map(([dept, val]) => {
+        const notEligible = Math.max(0, val.total - val.eligible);
+        return {
+          department: dept.length > 20 ? dept.substring(0, 18) + '...' : dept,
+          fullDepartment: dept,
+          total: val.total,
+          eligible: val.eligible,
+          notEligible,
+          conversion: val.total > 0 ? Math.round((val.eligible / val.total) * 100) : 0,
+          isOther: false
+        };
+      })
+      .sort((a, b) => b.total - a.total);
 
-    return list;
+    const totalDeptsCount = fullSortedList.length;
+    const totalApplicants = candidates.length;
+    const totalEligible = fullSortedList.reduce((acc, curr) => acc + curr.eligible, 0);
+
+    let displayList = fullSortedList;
+    if (fullSortedList.length > 13) {
+      const top12 = fullSortedList.slice(0, 12);
+      const others = fullSortedList.slice(12);
+      const otherTotal = others.reduce((acc, curr) => acc + curr.total, 0);
+      const otherEligible = others.reduce((acc, curr) => acc + curr.eligible, 0);
+      const otherNotEligible = Math.max(0, otherTotal - otherEligible);
+      const otherDeptsCount = others.length;
+
+      displayList = [
+        ...top12,
+        {
+          department: 'Otros',
+          fullDepartment: `Otros departamentos (${otherDeptsCount} deptos: ${others.map(o => o.fullDepartment).join(', ')})`,
+          total: otherTotal,
+          eligible: otherEligible,
+          notEligible: otherNotEligible,
+          conversion: otherTotal > 0 ? Math.round((otherEligible / otherTotal) * 100) : 0,
+          isOther: true
+        }
+      ];
+    }
+
+    return {
+      list: displayList,
+      totalDeptsCount,
+      totalApplicants,
+      totalEligible
+    };
   }, [candidates]);
 
   // 2. Top 13 QS Universities (Exact 13 universities list and eligible totals)
@@ -215,41 +285,51 @@ export const PanelUniversitiesDistribution: React.FC<Props> = ({ candidates }) =
               </h3>
             </div>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded">
-              Residencia Candidatos
+              {departmentData.totalApplicants} Postulantes / {departmentData.totalDeptsCount} Deptos
             </span>
           </div>
 
           <div className="p-4 flex-1 flex flex-col justify-between">
-            <div className="mb-2 bg-emerald-50/70 px-3 py-1.5 rounded-md border border-emerald-200 text-xs text-emerald-900 font-bold">
-              Top Departamentos de Procedencia
+            <div className="flex items-center justify-between mb-2 bg-emerald-50/70 px-3 py-1.5 rounded-md border border-emerald-200 text-xs">
+              <span className="font-bold text-slate-700">
+                Total Postulantes: <strong className="text-[#152238]">{departmentData.totalApplicants}</strong> ({departmentData.totalEligible} elegibles)
+              </span>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                {departmentData.totalDeptsCount} Deptos
+              </span>
             </div>
 
             <p className="text-[11px] text-slate-500 mb-2">
-              Departamentos de residencia del candidato con mayor volumen
+              Top departamentos con mayor volumen y consolidación del resto para cobertura total
             </p>
 
             <div className="h-[440px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={departmentData}
+                  data={departmentData.list}
                   layout="vertical"
                   margin={{ top: 5, right: 15, left: 35, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis type="number" tick={{ fontSize: 10 }} />
                   <YAxis dataKey="department" type="category" tick={{ fontSize: 9 }} width={100} interval={0} />
-                  <Tooltip
-                    formatter={(val: number, name: string, entry: any) => [`${val} postulantes`, entry?.payload?.fullDepartment || 'Departamento']}
-                    contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
-                  />
-                  <Bar dataKey="total" fill="#2E9E82" radius={[0, 4, 4, 0]} name="Postulantes" />
+                  <Tooltip content={<CustomDepartmentTooltip />} />
+                  <Bar dataKey="eligible" name="Elegibles" stackId="dept" fill="#2E9E82" />
+                  <Bar dataKey="notEligible" name="No Elegibles" stackId="dept" fill="#64748B" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
-              <span>Departamentos activos</span>
-              <span className="font-semibold text-[#2E9E82]">Cobertura Nacional</span>
+            <div className="mt-2 text-[10px] text-slate-500 flex justify-between items-center">
+              <span className="flex items-center gap-3">
+                <span className="flex items-center gap-1.5 font-bold text-emerald-800">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#2E9E82]" /> Elegibles
+                </span>
+                <span className="flex items-center gap-1.5 font-bold text-slate-700">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#64748B]" /> No Elegibles
+                </span>
+              </span>
+              <span className="font-semibold text-[#2E9E82]">100% Postulaciones (13 Barras)</span>
             </div>
           </div>
         </div>
