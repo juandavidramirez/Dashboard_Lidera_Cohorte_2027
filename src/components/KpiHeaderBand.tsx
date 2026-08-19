@@ -2,6 +2,7 @@ import React from 'react';
 import { TrendingUp, AlertTriangle, Building2, Target, CheckCircle2, FileX, Sparkles } from 'lucide-react';
 import { GoalTarget, Candidate } from '../types';
 import { calculateUniversityAndHpcMetrics } from '../lib/metricsCalculator';
+import { getComparison2025Sync } from '../lib/comparison2025';
 
 interface Props {
   eligibleCount: number;
@@ -36,9 +37,10 @@ export const KpiHeaderBand: React.FC<Props> = ({
   const prioMeta = 300;
   const prioAchievedPct = Math.min(100, Math.round((uniHpcStats.eligiblePrioritarias / prioMeta) * 1000) / 10);
 
-  const baseline2025Count: number | null = null;
-  const variationVs2025 = baseline2025Count && baseline2025Count > 0
-    ? Math.round(((eligibleCount - baseline2025Count) / baseline2025Count) * 100)
+  const data2025 = getComparison2025Sync();
+  const baseline2025Count = data2025.top7Elegibles2025; // 141 from Datos_Calculados_2025
+  const variationVs2025 = baseline2025Count > 0
+    ? Math.round(((uniHpcStats.eligiblePrioritarias - baseline2025Count) / baseline2025Count) * 100)
     : yoyGrowthPct;
 
   return (

@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { Candidate, WeeklyEligibilityStat } from '../../types';
 import { calculateWeeklyEligibilityStats } from '../../lib/metricsCalculator';
+import { getComparison2025Sync } from '../../lib/comparison2025';
 import { Info, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface Props {
@@ -25,13 +26,17 @@ interface Props {
 export const PanelEligibilityRate: React.FC<Props> = ({
   candidates = [],
   weeklyStats: initialWeeklyStats,
-  baseline2026Rate = 22,
+  baseline2026Rate,
   isLoading = false,
   isError = false,
   onRetry
 }) => {
   const [activeTab, setActiveTab] = useState<'rate' | 'ineligible_reason'>('rate');
   const [isCumulative, setIsCumulative] = useState<boolean>(false);
+
+  const data2025 = getComparison2025Sync();
+  const baselineRate = baseline2026Rate !== undefined ? baseline2026Rate : data2025.elegibilidadGlobalPct;
+  const noBaselineRate = Math.round((100 - baselineRate) * 100) / 100; // 33.85
 
   // Weekly Stats (always 8 weeks for Weekly mode)
   const weeklyItems = useMemo(() => {
@@ -206,21 +211,21 @@ export const PanelEligibilityRate: React.FC<Props> = ({
 
         {activeTab === 'rate' ? (
           <div className="space-y-3 my-1">
-            {/* Baseline 2026 Reference Bar */}
+            {/* Baseline 2025 Reference Bar */}
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
               <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
-                <span>Promedio Histórico 2026 (Línea Base)</span>
-                <span className="text-[#2E9E82] font-extrabold">{baseline2026Rate}% Elegibles</span>
+                <span>Promedio Histórico 2025 (Línea Base)</span>
+                <span className="text-[#2E9E82] font-extrabold">{baselineRate}% Elegibles</span>
               </div>
               <div className="h-5 w-full bg-slate-200 rounded flex overflow-hidden border border-slate-300">
                 <div
                   className="h-full bg-[#2E9E82] text-white text-xs font-black flex items-center justify-center shadow-xs"
-                  style={{ width: `${baseline2026Rate}%` }}
+                  style={{ width: `${baselineRate}%` }}
                 >
-                  {baseline2026Rate}%
+                  {baselineRate}%
                 </div>
                 <div className="h-full flex-1 bg-slate-500 text-white text-[10px] font-bold flex items-center justify-center">
-                  78% No Elegibles
+                  {noBaselineRate}% No Elegibles
                 </div>
               </div>
             </div>
@@ -282,16 +287,16 @@ export const PanelEligibilityRate: React.FC<Props> = ({
                       <span className="text-[9px] font-bold text-[#2E9E82] mb-1">
                         {stat.total > 0 ? `${eligiblePct}%` : '—'}
                       </span>
-                      <div className="w-full max-w-[26px] h-28 bg-slate-100 rounded-sm overflow-hidden flex flex-col border border-slate-200 relative">
+                      <div className="w-full max-w-[26px] h-28 bg-slate-100 rounded-sm overflow-visible flex flex-col border border-slate-200 relative">
                         {stat.total > 0 ? (
                           <>
                             {/* Top Segment: No Elegibles (Unified Neutral Slate Color matching Acumulado) */}
                             <div
-                              className="bg-slate-400 hover:bg-slate-500 text-white text-[8px] font-bold flex items-center justify-center transition-all cursor-pointer relative group/bar"
+                              className={`bg-slate-400 hover:bg-slate-500 text-white text-[8px] font-bold flex items-center justify-center transition-all cursor-pointer relative group/bar ${eligiblePct === 0 ? 'rounded-sm' : 'rounded-t-sm'}`}
                               style={{ height: `${ineligiblePct}%` }}
                               title={`No Elegible: ${ineligiblePct}% (${stat.notEligibleCount} candidatos)`}
                             >
-                              <div className="hidden group-hover/bar:flex flex-col absolute bottom-full mb-1 z-30 bg-slate-900 text-white text-[10px] p-2 rounded shadow-xl whitespace-nowrap pointer-events-none left-1/2 -translate-x-1/2">
+                              <div className="hidden group-hover/bar:flex flex-col absolute bottom-full mb-1.5 z-50 bg-slate-900 text-white text-[10px] p-2 rounded shadow-xl whitespace-nowrap pointer-events-none left-1/2 -translate-x-1/2">
                                 <span className="font-extrabold text-slate-300">
                                   No Elegibles: {ineligiblePct}%
                                 </span>
@@ -303,11 +308,11 @@ export const PanelEligibilityRate: React.FC<Props> = ({
 
                             {/* Bottom Segment: Elegibles (Interactive with Hover Tooltip) */}
                             <div
-                              className="bg-[#2E9E82] hover:bg-[#25856e] text-white text-[8px] font-bold flex items-center justify-center transition-all cursor-pointer relative group/bar"
+                              className={`bg-[#2E9E82] hover:bg-[#25856e] text-white text-[8px] font-bold flex items-center justify-center transition-all cursor-pointer relative group/bar ${ineligiblePct === 0 ? 'rounded-sm' : 'rounded-b-sm'}`}
                               style={{ height: `${eligiblePct}%` }}
                               title={`Elegible: ${eligiblePct}% (${stat.eligibleCount} candidatos)`}
                             >
-                              <div className="hidden group-hover/bar:flex flex-col absolute bottom-full mb-1 z-30 bg-slate-900 text-white text-[10px] p-2 rounded shadow-xl whitespace-nowrap pointer-events-none left-1/2 -translate-x-1/2">
+                              <div className="hidden group-hover/bar:flex flex-col absolute bottom-full mb-1.5 z-50 bg-slate-900 text-white text-[10px] p-2 rounded shadow-xl whitespace-nowrap pointer-events-none left-1/2 -translate-x-1/2">
                                 <span className="font-extrabold text-emerald-300">
                                   Elegibles: {eligiblePct}%
                                 </span>
@@ -318,7 +323,7 @@ export const PanelEligibilityRate: React.FC<Props> = ({
                             </div>
                           </>
                         ) : (
-                          <div className="h-full w-full bg-slate-50 flex items-center justify-center text-[8px] text-slate-300 font-bold">
+                          <div className="h-full w-full bg-slate-50 flex items-center justify-center text-[8px] text-slate-300 font-bold rounded-sm">
                             0
                           </div>
                         )}
@@ -353,7 +358,7 @@ export const PanelEligibilityRate: React.FC<Props> = ({
                 <div className="bg-amber-50 rounded-md p-2.5 border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
                   <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                   <span>
-                    <strong>Hallazgo en Población No Elegible:</strong> La causa principal de inelegibilidad es el no cumplimiento del criterio de <strong>Enfoque (Inglés B2+ / STEM)</strong>, seguido por un promedio académico GPA menor a 3.5.
+                    <strong>Hallazgo en Población No Elegible (NE):</strong> La causa principal de inelegibilidad es el no cumplimiento del criterio de <strong>Enfoque (Inglés B2+ / STEM)</strong>, seguido por un promedio académico GPA menor a 3.5.
                   </span>
                 </div>
 
@@ -422,7 +427,7 @@ export const PanelEligibilityRate: React.FC<Props> = ({
                           </div>
                         </div>
                         <span className="text-[10px] font-mono text-slate-500 w-16 text-right">
-                          {totalIneligible} no eleg.
+                          {totalIneligible} NE
                         </span>
                       </div>
                     );

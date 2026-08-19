@@ -8,6 +8,7 @@ import {
   ChannelMixMonthlyStat
 } from '../types';
 import { INITIAL_GOAL_TARGETS } from '../data/mockData';
+import { getComparison2025Sync } from './comparison2025';
 
 const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -257,19 +258,64 @@ export function calculateMonthlyEligibilityStats(candidates: Candidate[]): Month
   return activeMonths.length > 0 ? activeMonths : result.slice(0, 7);
 }
 
-// Calculate YoY Volume Stats
+// Calculate YoY Volume Stats (Quartile-based comparison methodology with future quartile masking)
 export function calculateYoyMonthlyStats(candidates: Candidate[]): YoyMonthlyStat[] {
-  const monthlyStats = calculateMonthlyEligibilityStats(candidates);
+  const data2025 = getComparison2025Sync();
+  const quartileCounts2025 = data2025.quartileCounts2025; // Q1: 276, Q2: 476, Q3: 643, Q4: 899
 
-  return monthlyStats.map(stat => {
-    // 2026 baseline benchmark as ~85% of 2027 projection or actuals
-    const count2026 = Math.round(stat.eligibleCount * 0.88);
-    return {
-      month: stat.month,
-      count2026: count2026 > 0 ? count2026 : Math.round(stat.total * 0.22),
-      count2027: stat.eligibleCount
-    };
+  // Convocatoria 2026/2027 timeframe: 2026-07-28 to 2026-09-13 (48 days total)
+  const startMs = new Date('2026-07-28T00:00:00Z').getTime();
+  const endMs = new Date('2026-09-13T23:59:59Z').getTime();
+  const duration = Math.max(1, endMs - startMs);
+
+  const q1Start = startMs;
+  const q2Start = startMs + duration * 0.25; // Aug 10
+  const q3Start = startMs + duration * 0.50; // Aug 22
+  const q4Start = startMs + duration * 0.75; // Sep 3
+
+  const now = Date.now();
+
+  let q1Eligible = 0;
+  let q2Eligible = 0;
+  let q3Eligible = 0;
+  let q4Eligible = 0;
+
+  candidates.forEach((c, idx) => {
+    if (!isFormCompleted(c) || !isCandidateEligible(c)) return;
+
+    const dateStr = c.registrationDate || c.fechaCreacion;
+    let progress = 0.5; // fallback
+    if (dateStr) {
+      const t = new Date(dateStr).getTime();
+      if (!isNaN(t)) {
+        progress = (t - startMs) / duration;
+      }
+    } else {
+      progress = (idx % 100) / 100;
+    }
+
+    if (progress <= 0.25) {
+      q1Eligible += 1;
+    } else if (progress <= 0.50) {
+      q2Eligible += 1;
+    } else if (progress <= 0.75) {
+      q3Eligible += 1;
+    } else {
+      q4Eligible += 1;
+    }
   });
+
+  const cumQ1 = q1Eligible;
+  const cumQ2 = q1Eligible + q2Eligible;
+  const cumQ3 = q1Eligible + q2Eligible + q3Eligible;
+  const cumQ4 = q1Eligible + q2Eligible + q3Eligible + q4Eligible;
+
+  return [
+    { month: 'Q1', count2026: quartileCounts2025.Q1, count2027: now >= q1Start ? cumQ1 : 0 },
+    { month: 'Q2', count2026: quartileCounts2025.Q2, count2027: now >= q2Start ? cumQ2 : 0 },
+    { month: 'Q3', count2026: quartileCounts2025.Q3, count2027: now >= q3Start ? cumQ3 : 0 },
+    { month: 'Q4', count2026: quartileCounts2025.Q4, count2027: now >= q4Start ? cumQ4 : 0 }
+  ];
 }
 
 // Calculate Weekly Eligibility Stats (Supports Weekly and Cumulative modes across 8 Weeks)

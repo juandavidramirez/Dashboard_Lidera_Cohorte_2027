@@ -26,7 +26,7 @@ export const PanelYoyVolume: React.FC<Props> = ({
   total2026 = 0,
   isLoading = false
 }) => {
-  const [viewMode, setViewMode] = useState<'line' | 'bar'>('line');
+  const [viewMode, setViewMode] = useState<'line' | 'bar' | 'context'>('line');
 
   const diffPct = total2026 > 0 ? Math.round(((total2027 - total2026) / total2026) * 1000) / 10 : 0;
 
@@ -69,6 +69,16 @@ export const PanelYoyVolume: React.FC<Props> = ({
           >
             Barras
           </button>
+          <button
+            onClick={() => setViewMode('context')}
+            className={`px-2 py-0.5 rounded font-bold transition-all ${
+              viewMode === 'context'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-900/80 hover:bg-white/30'
+            }`}
+          >
+            Contexto
+          </button>
         </div>
       </div>
 
@@ -80,64 +90,99 @@ export const PanelYoyVolume: React.FC<Props> = ({
                 Comparativo Cohorte 2027 vs Cohorte 2026
               </h3>
               <p className="text-[11px] text-slate-500">
-                Evolución de perfiles elegibles acumulados
+                {viewMode === 'context' ? 'Metodología de Cuartiles y Rangos de Fechas' : 'Evolución de perfiles elegibles acumulados por cuartiles'}
               </p>
             </div>
-            <div className="flex items-center gap-2 text-[10px]">
-              <span className="flex items-center gap-1 font-bold text-[#2E9E82]">
-                <span className="w-2 h-0.5 bg-[#2E9E82]" /> COHORTE 2027
-              </span>
-              <span className="flex items-center gap-1 font-bold text-[#152238]/60">
-                <span className="w-2 h-0.5 bg-[#152238]" /> COHORTE 2026
-              </span>
-            </div>
+            {viewMode !== 'context' && (
+              <div className="flex items-center gap-2 text-[10px]">
+                <span className="flex items-center gap-1 font-bold text-[#2E9E82]">
+                  <span className="w-2 h-0.5 bg-[#2E9E82]" /> COHORTE 2027
+                </span>
+                <span className="flex items-center gap-1 font-bold text-[#152238]/60">
+                  <span className="w-2 h-0.5 bg-[#152238]" /> COHORTE 2026
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Chart Container */}
+        {/* Chart or Context Container */}
         <div className="h-44 my-1 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            {viewMode === 'line' ? (
-              <LineChart data={yoyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
-                  formatter={(val: number) => [`${val} elegibles`, 'Volumen']}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="count2027"
-                  name="Cohorte 2027"
-                  stroke="#2E9E82"
-                  strokeWidth={3}
-                  dot={{ r: 3, fill: '#2E9E82' }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="count2026"
-                  name="Cohorte 2026"
-                  stroke="#152238"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  dot={{ r: 2, fill: '#152238' }}
-                />
-              </LineChart>
-            ) : (
-              <BarChart data={yoyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
-                />
-                <Bar dataKey="count2027" name="Cohorte 2027" fill="#2E9E82" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="count2026" name="Cohorte 2026" fill="#152238" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            )}
-          </ResponsiveContainer>
+          {viewMode === 'context' ? (
+            <div className="h-full overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-200 text-[11px] text-slate-700 space-y-2">
+              <p className="font-semibold text-slate-900">
+                Metodología de Cuartiles por % de Avance:
+              </p>
+              <p>
+                Se compara por cuartiles de porcentaje de avance y no por semana calendario debido a que ambas convocatorias tienen duraciones distintas (2025: 33 días / ~5 semanas; 2026: 48 días / 8 semanas). Normalizar de 0% a 100% permite contrastar ciclos de manera equivalente.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+                <div>
+                  <strong className="text-slate-900 block">Convocatoria 2025 (33 días):</strong>
+                  <span className="text-[10px] text-slate-600 block">14 ago – 15 sep 2025</span>
+                  <ul className="list-disc pl-4 text-[10px] text-slate-600 space-y-0.5 mt-1">
+                    <li><strong>Q1 (0–25%):</strong> 14 ago – 22 ago</li>
+                    <li><strong>Q2 (25–50%):</strong> 23 ago – 31 ago</li>
+                    <li><strong>Q3 (50–75%):</strong> 1 sep – 8 sep</li>
+                    <li><strong>Q4 (75–100%):</strong> 9 sep – 15 sep</li>
+                  </ul>
+                </div>
+                <div>
+                  <strong className="text-slate-900 block">Convocatoria 2026 (48 días):</strong>
+                  <span className="text-[10px] text-slate-600 block">28 jul – 13 sep 2026</span>
+                  <ul className="list-disc pl-4 text-[10px] text-slate-600 space-y-0.5 mt-1">
+                    <li><strong>Q1 (0–25%):</strong> 28 jul – 9 ago</li>
+                    <li><strong>Q2 (25–50%):</strong> 10 ago – 21 ago</li>
+                    <li><strong>Q3 (50–75%):</strong> 22 ago – 2 sep</li>
+                    <li><strong>Q4 (75–100%):</strong> 3 sep – 13 sep</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              {viewMode === 'line' ? (
+                <LineChart data={yoyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
+                    formatter={(val: number) => [`${val} elegibles`, 'Volumen']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count2027"
+                    name="Cohorte 2027"
+                    stroke="#2E9E82"
+                    strokeWidth={3}
+                    dot={{ r: 3, fill: '#2E9E82' }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count2026"
+                    name="Cohorte 2026"
+                    stroke="#152238"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    dot={{ r: 2, fill: '#152238' }}
+                  />
+                </LineChart>
+              ) : (
+                <BarChart data={yoyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '6px', fontSize: '11px', border: '1px solid #E2E8F0' }}
+                  />
+                  <Bar dataKey="count2027" name="Cohorte 2027" fill="#2E9E82" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="count2026" name="Cohorte 2026" fill="#152238" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              )}
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Footer stat totals */}

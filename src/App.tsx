@@ -11,6 +11,7 @@ import {
   isFormCompleted,
   isCandidateEligible
 } from './lib/metricsCalculator';
+import { getComparison2025Sync, fetchDatosCalculados2025 } from './lib/comparison2025';
 import { Header } from './components/Header';
 import { Sidebar, ActiveTab } from './components/Sidebar';
 import { KpiHeaderBand } from './components/KpiHeaderBand';
@@ -38,7 +39,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Subscribe to dataStore updates
+  // Subscribe to dataStore updates and fetch 2025 comparison data
   useEffect(() => {
     const updateLocalState = () => {
       setCandidates(dataStore.getCandidates());
@@ -47,6 +48,9 @@ export default function App() {
     };
 
     updateLocalState();
+    fetchDatosCalculados2025().then(() => {
+      setCandidates([...dataStore.getCandidates()]); // trigger re-render with fetched 2025 data
+    });
     const unsubscribe = dataStore.subscribe(updateLocalState);
     return () => unsubscribe();
   }, []);
@@ -227,7 +231,7 @@ export default function App() {
                   <PanelYoyVolume
                     yoyData={yoyStats}
                     total2027={eligibleCount}
-                    total2026={Math.round(eligibleCount * 0.88)}
+                    total2026={getComparison2025Sync().elegibles2025}
                   />
 
                   {/* Panel D: Channel Mix Trend */}
