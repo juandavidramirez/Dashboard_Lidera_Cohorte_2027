@@ -270,16 +270,47 @@ class DataStore {
     this.notify();
 
     try {
-      // 1. Fetch Candidates
-      const { data: candData, error: candError } = await supabase
-        .from('candidates_convocatoria')
-        .select('*')
-        .order('registration_date', { ascending: false });
+      // 1. Fetch Candidates (Paginated to get all rows, bypassing the 1000 limit)
+      let allRemoteData: any[] = [];
+      let fetchMore = true;
+      let rangeStart = 0;
+      const step = 1000;
 
-      if (candError) throw candError;
+      while (fetchMore) {
+        const { data: candData, error: candError } = await supabase
+          .from('candidates_convocatoria')
+          .select('*')
+          .order('registration_date', { ascending: false })
+          .range(rangeStart, rangeStart + step - 1);
 
-      if (candData && candData.length > 0) {
-        this.candidates = candData.map(rowToCandidate);
+        if (candError) throw candError;
+
+        if (candData && candData.length > 0) {
+          allRemoteData = [...allRemoteData, ...candData];
+          if (candData.length < step) {
+            fetchMore = false;
+          } else {
+            rangeStart += step;
+          }
+        } else {
+          fetchMore = false;
+        }
+      }
+
+      if (allRemoteData.length > 0) {
+        const remoteCandidates = allRemoteData.map(rowToCandidate);
+        
+        // Anti-regression safeguard: Ensure total count never drops unexpectedly due to partial remote sync
+        if (remoteCandidates.length < this.candidates.length) {
+          console.warn(`[Safeguard Alert] Remote candidate count (${remoteCandidates.length}) is lower than local count (${this.candidates.length}). Merging records to prevent data regression.`);
+          const existingMap = new Map(this.candidates.map(c => [c.id, c]));
+          remoteCandidates.forEach(rc => {
+            existingMap.set(rc.id, rc);
+          });
+          this.candidates = Array.from(existingMap.values());
+        } else {
+          this.candidates = remoteCandidates;
+        }
       }
 
       // 2. Fetch Goals
