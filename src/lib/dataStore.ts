@@ -64,7 +64,7 @@ function candidateToRow(cand: Candidate) {
 
 // Map Supabase Row to Candidate
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToCandidate(row: any): Candidate {
+export function rowToCandidate(row: any): Candidate {
   const rawEligStr = String(row.eligibility || row.cumple_minimos || '').toLowerCase().trim();
   const isNoEligible = rawEligStr.includes('no cumple') || rawEligStr.includes('no elegible') || rawEligStr === 'no';
   const derivedEligibility: EligibilityStatus = isNoEligible ? 'No Elegible' : 'Elegible';
@@ -280,7 +280,8 @@ class DataStore {
         const { data: candData, error: candError } = await supabase
           .from('candidates_convocatoria')
           .select('*')
-          .order('registration_date', { ascending: false })
+          .order('fecha_creacion', { ascending: false })
+          .order('id', { ascending: true })
           .range(rangeStart, rangeStart + step - 1);
 
         if (candError) throw candError;
