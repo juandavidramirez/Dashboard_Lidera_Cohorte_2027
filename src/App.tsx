@@ -26,6 +26,7 @@ import { CandidateDetailModal } from './components/CandidateDetailModal';
 import { UniversityNormalization } from './components/UniversityNormalization';
 import { UniversityModuleScorecards } from './components/UniversityModuleScorecards';
 import { GoalSettings } from './components/GoalSettings';
+import { AuxiliaryIndicatorsModule } from './components/AuxiliaryIndicatorsModule';
 import { ToastContainer, ToastMessage } from './components/Toast';
 
 export default function App() {
@@ -305,6 +306,12 @@ export default function App() {
                 universities={universities}
                 onAddVariant={handleAddUniversityVariant}
               />
+            </div>
+          )}
+
+          {activeTab === 'auxiliary_charts' && (
+            <div className="space-y-6">
+              <AuxiliaryIndicatorsModule candidates={completedCandidates} />
             </div>
           )}
 

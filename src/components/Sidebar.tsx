@@ -5,10 +5,11 @@ import {
   Building2,
   Target,
   Sparkles,
-  FileX
+  FileX,
+  LineChart
 } from 'lucide-react';
 
-export type ActiveTab = 'overview' | 'candidates' | 'incomplete_candidates' | 'universities' | 'goals';
+export type ActiveTab = 'overview' | 'candidates' | 'incomplete_candidates' | 'universities' | 'goals' | 'auxiliary_charts';
 
 interface Props {
   activeTab: ActiveTab;
@@ -47,6 +48,12 @@ export const Sidebar: React.FC<Props> = ({
   ];
 
   const analyticsNavItems = [
+    {
+      id: 'auxiliary_charts',
+      label: 'Gráficas e Indicadores Auxiliares',
+      icon: LineChart,
+      badge: 'Fuentes'
+    },
     {
       id: 'universities',
       label: 'Universidades',
