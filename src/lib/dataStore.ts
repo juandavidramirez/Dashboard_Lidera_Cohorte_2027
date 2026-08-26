@@ -280,7 +280,6 @@ class DataStore {
         const { data: candData, error: candError } = await supabase
           .from('candidates_convocatoria')
           .select('*')
-          .order('fecha_creacion', { ascending: false })
           .order('id', { ascending: true })
           .range(rangeStart, rangeStart + step - 1);
 
