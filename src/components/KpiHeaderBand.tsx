@@ -24,18 +24,29 @@ export const KpiHeaderBand: React.FC<Props> = ({
   yoyGrowthPct,
   candidates = []
 }) => {
-  const achievedPct = Math.min(100, Math.round((eligibleCount / totalGoal) * 1000) / 10);
+  // Elegibles Goal Progress
+  const achievedPct = totalGoal > 0 ? Math.round((eligibleCount / totalGoal) * 1000) / 10 : 0;
+  const eligibleBarWidth = Math.min(100, Math.max(achievedPct, 12));
   const pendingCount = Math.max(0, totalGoal - eligibleCount);
   const pendingPct = Math.max(0, Math.round((100 - achievedPct) * 10) / 10);
+  const surplusEligible = Math.max(0, eligibleCount - totalGoal);
+
+  // Total Postulantes (for breakdown in card 1)
+  const totalApps = totalCandidatesCount > 0 ? totalCandidatesCount : eligibleCount;
+  const totalAppsGoal = 1500;
+  const totalAppsPct = totalAppsGoal > 0 ? Math.round((totalApps / totalAppsGoal) * 1000) / 10 : 0;
 
   // Tasa de elegibilidad (Elegibles / Total Postulantes)
-  const totalApps = totalCandidatesCount > 0 ? totalCandidatesCount : eligibleCount;
-  const eligibilityRate = Math.round((eligibleCount / totalApps) * 1000) / 10;
+  const eligibilityRate = totalApps > 0 ? Math.round((eligibleCount / totalApps) * 1000) / 10 : 0;
 
-  // Calculate University Metrics
+  // Calculate University Metrics & Top 7 Goal (300)
   const uniHpcStats = calculateUniversityAndHpcMetrics(candidates);
   const prioMeta = 300;
-  const prioAchievedPct = Math.min(100, Math.round((uniHpcStats.eligiblePrioritarias / prioMeta) * 1000) / 10);
+  const prioAchievedPct = prioMeta > 0 ? Math.round((uniHpcStats.eligiblePrioritarias / prioMeta) * 1000) / 10 : 0;
+  const prioBarWidth = Math.min(100, Math.max(prioAchievedPct, 12));
+  const prioPendingCount = Math.max(0, prioMeta - uniHpcStats.eligiblePrioritarias);
+  const prioPendingPct = Math.max(0, Math.round((100 - prioAchievedPct) * 10) / 10);
+  const surplusPrio = Math.max(0, uniHpcStats.eligiblePrioritarias - prioMeta);
 
   const data2025 = getComparison2025Sync();
   const baseline2025Count = data2025.top7Elegibles2025; // 141 from Datos_Calculados_2025
@@ -66,7 +77,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
       {/* 50% / 50% Main Header Section - LEVEL 1 HIGHLIGHTED GOLD/AMBER BORDERS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
         
-        {/* Left 50%: Meta e Indicador de Brecha (Elegibilidad Global) */}
+        {/* Left 50%: Meta e Indicador de Brecha (Elegibles) */}
         <div className="bg-white border-2 border-amber-400 rounded-2xl p-4 sm:p-5 shadow-md ring-2 ring-amber-400/20 flex flex-col justify-between min-w-0">
           <div>
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-amber-100">
@@ -114,11 +125,11 @@ export const KpiHeaderBand: React.FC<Props> = ({
                       {totalApps.toLocaleString()}
                     </span>
                     <span className="text-xs font-bold text-slate-600">
-                      / 1,500
+                      / {totalAppsGoal.toLocaleString()}
                     </span>
                   </div>
                   <span className="text-[10px] text-slate-600 font-extrabold block mt-0.5">
-                    {Math.min(100, Math.round((totalApps / 1500) * 1000) / 10)}% de la meta (1.5k)
+                    {totalAppsPct}% de la meta (1.5k)
                   </span>
                 </div>
               </div>
@@ -143,18 +154,28 @@ export const KpiHeaderBand: React.FC<Props> = ({
             <div className="space-y-1.5 mt-3">
               <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-extrabold text-slate-600 px-0.5 flex-wrap gap-x-2">
                 <span>Avance de Meta: {achievedPct}% logrado</span>
-                <span className="text-amber-900">Brecha: {pendingCount.toLocaleString()} pendientes ({pendingPct}%)</span>
+                {achievedPct >= 100 ? (
+                  <span className="text-amber-800 font-black">
+                    ¡Meta superada! {surplusEligible > 0 ? `(+${surplusEligible.toLocaleString()} sobre la meta)` : '(Meta cumplida)'}
+                  </span>
+                ) : (
+                  <span className="text-amber-900">
+                    Brecha: {pendingCount.toLocaleString()} pendientes ({pendingPct}%)
+                  </span>
+                )}
               </div>
               <div className="w-full h-8 bg-amber-100 rounded-lg overflow-hidden flex border-2 border-slate-300 shadow-inner">
                 <div
                   className="h-full bg-[#2E9E82] transition-all duration-700 flex items-center justify-center text-[10px] sm:text-xs font-black text-white px-2 overflow-hidden shadow-xs whitespace-nowrap truncate"
-                  style={{ width: `${Math.max(achievedPct, 12)}%` }}
+                  style={{ width: `${eligibleBarWidth}%` }}
                 >
                   {achievedPct}% ({eligibleCount.toLocaleString()})
                 </div>
-                <div className="h-full flex-1 bg-amber-200/90 flex items-center justify-center text-[10px] sm:text-xs font-extrabold text-amber-950 px-2 overflow-hidden whitespace-nowrap truncate">
-                  {pendingCount.toLocaleString()} pendientes ({pendingPct}%)
-                </div>
+                {achievedPct < 100 && (
+                  <div className="h-full flex-1 bg-amber-200/90 flex items-center justify-center text-[10px] sm:text-xs font-extrabold text-amber-950 px-2 overflow-hidden whitespace-nowrap truncate">
+                    {pendingCount.toLocaleString()} pendientes ({pendingPct}%)
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -162,8 +183,12 @@ export const KpiHeaderBand: React.FC<Props> = ({
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs flex-wrap gap-2">
             <span className="text-slate-600 font-medium text-[11px] sm:text-xs">Fecha de cierre: <strong className="text-slate-900 font-extrabold">13 de Septiembre</strong></span>
             
-            {/* ENHANCED ALERT */}
-            {achievedPct >= 80 ? (
+            {/* Status Badge in Bottom-Right Corner */}
+            {achievedPct >= 100 ? (
+              <span className="bg-[#F2A900] text-slate-950 font-extrabold px-3 py-1.5 rounded-lg text-xs uppercase tracking-wide flex items-center gap-1.5 shadow-2xs border border-amber-500">
+                <CheckCircle2 className="w-4 h-4 text-slate-950 shrink-0" /> ¡Meta completada!
+              </span>
+            ) : achievedPct >= 80 ? (
               <span className="bg-emerald-600 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs uppercase tracking-wide flex items-center gap-1.5 shadow-2xs border border-emerald-700">
                 <CheckCircle2 className="w-4 h-4 shrink-0" /> En Trayectoria Correcta
               </span>
@@ -175,7 +200,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Right 50%: Universidades Priorizadas (Top 7) - PERFECT SYMMETRY WITH LEFT CARD */}
+        {/* Right 50%: Universidades Priorizadas (Top 7) - RESTORED */}
         <div className="bg-white border-2 border-amber-400 rounded-2xl p-4 sm:p-5 shadow-md ring-2 ring-amber-400/20 flex flex-col justify-between min-w-0">
           <div>
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-amber-100">
@@ -190,7 +215,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
               </span>
             </div>
 
-            {/* Metrics Breakdown Grid - Identical 3-column layout as left card */}
+            {/* Metrics Breakdown Grid - Top 7 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-3.5">
               {/* Logrado Top 7 vs Meta 300 */}
               <div className="bg-emerald-50/90 border border-emerald-200/90 p-3 rounded-xl flex flex-col justify-between">
@@ -243,22 +268,32 @@ export const KpiHeaderBand: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Progress Bar towards Top 7 Target - Same color palette as left card (#2E9E82) */}
+            {/* Progress Bar towards Top 7 Target */}
             <div className="space-y-1.5 mt-3">
               <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-extrabold text-slate-600 px-0.5 flex-wrap gap-x-2">
                 <span>Avance Meta Top 7: {prioAchievedPct}% logrado</span>
-                <span className="text-amber-900">Brecha: {Math.max(0, prioMeta - uniHpcStats.eligiblePrioritarias)} pendientes ({Math.max(0, Math.round((100 - prioAchievedPct) * 10) / 10)}%)</span>
+                {prioAchievedPct >= 100 ? (
+                  <span className="text-amber-800 font-black">
+                    ¡Meta superada! {surplusPrio > 0 ? `(+${surplusPrio} sobre la meta)` : '(Meta cumplida)'}
+                  </span>
+                ) : (
+                  <span className="text-amber-900">
+                    Brecha: {prioPendingCount} pendientes ({prioPendingPct}%)
+                  </span>
+                )}
               </div>
               <div className="w-full h-8 bg-amber-100 rounded-lg overflow-hidden flex border-2 border-slate-300 shadow-inner">
                 <div
                   className="h-full bg-[#2E9E82] transition-all duration-700 flex items-center justify-center text-[10px] sm:text-xs font-black text-white px-2 overflow-hidden shadow-xs whitespace-nowrap truncate"
-                  style={{ width: `${Math.max(prioAchievedPct, 12)}%` }}
+                  style={{ width: `${prioBarWidth}%` }}
                 >
                   {prioAchievedPct}% ({uniHpcStats.eligiblePrioritarias})
                 </div>
-                <div className="h-full flex-1 bg-amber-200/90 flex items-center justify-center text-[10px] sm:text-xs font-extrabold text-amber-950 px-2 overflow-hidden whitespace-nowrap truncate">
-                  {Math.max(0, prioMeta - uniHpcStats.eligiblePrioritarias)} pendientes ({Math.max(0, Math.round((100 - prioAchievedPct) * 10) / 10)}%)
-                </div>
+                {prioAchievedPct < 100 && (
+                  <div className="h-full flex-1 bg-amber-200/90 flex items-center justify-center text-[10px] sm:text-xs font-extrabold text-amber-950 px-2 overflow-hidden whitespace-nowrap truncate">
+                    {prioPendingCount} pendientes ({prioPendingPct}%)
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -277,6 +312,7 @@ export const KpiHeaderBand: React.FC<Props> = ({
     </div>
   );
 };
+
 
 
 
