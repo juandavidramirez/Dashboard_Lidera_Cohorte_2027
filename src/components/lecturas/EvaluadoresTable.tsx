@@ -28,11 +28,11 @@ export const EvaluadoresTable: React.FC<Props> = ({ evaluadores }) => {
         </div>
       </div>
 
-      {/* Description Strip */}
+      {/* Description Strip & Status Legend */}
       <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-200 text-xs text-slate-500 flex items-center justify-between flex-wrap gap-2">
-        <p>
-          Listado ordenado de menor a mayor porcentaje de avance para focalizar la gestión y aceleración operativa.
-        </p>
+        <span className="font-medium text-slate-600">
+          Prioridad de seguimiento por % de avance
+        </span>
         <div className="flex items-center gap-3 text-[11px]">
           <span className="flex items-center gap-1 font-semibold text-emerald-700">
             <span className="w-2 h-2 rounded-full bg-[#2E9E82]" /> On track (≥80%)
@@ -127,19 +127,6 @@ export const EvaluadoresTable: React.FC<Props> = ({ evaluadores }) => {
             })}
           </tbody>
         </table>
-      </div>
-
-      {/* Footnote Strip: Criterio Confirmado */}
-      <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-600">
-        <div className="flex items-center gap-1.5 text-[11.5px]">
-          <CheckCircle2 className="w-4 h-4 text-[#2E9E82] shrink-0" />
-          <span>
-            <strong className="text-slate-800">Criterio de semáforo confirmado:</strong> 🟢 On track ≥80%, 🟡 Medio 50%–79%, 🔴 Atrasado &lt;50% — Umbral fijo estándar sobre el % de avance de lecturas asignadas.
-          </span>
-        </div>
-        <span className="text-[11px] font-mono text-slate-400">
-          Total asignaciones: {evaluadores.reduce((acc, curr) => acc + curr.asignados, 0)}
-        </span>
       </div>
     </div>
   );

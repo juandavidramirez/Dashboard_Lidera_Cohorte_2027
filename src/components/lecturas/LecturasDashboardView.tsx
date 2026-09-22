@@ -130,29 +130,23 @@ export const LecturasDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp
         </div>
       )}
 
-      {/* 1. Header — 4 Indicadores Generales en el orden exacto */}
+      {/* 1. Header — 4 Indicadores Generales */}
       <section className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 uppercase tracking-wider bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-[#2E9E82]" />
             1. Indicadores Generales de Proceso
           </span>
-          <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-            Progreso · Éxito sobre Convocatoria · Atrasos · Alineación IA/Humano
-          </span>
         </div>
         <LecturasHeaderKPIs kpis={kpis} />
       </section>
 
-      {/* 2. Sección Candidato — Vista de Resultado (PRIMERA SECCIÓN SEGÚN REQUERIMIENTO) */}
+      {/* 2. Sección Candidato — Resultados y Perfil Estratégico (Amarillo / Ámbar) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between px-1">
-          <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 uppercase tracking-wider bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#F2A900]" />
+          <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-950 uppercase tracking-wider bg-amber-100/90 border border-amber-300 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-amber-600" />
             2. Sección Candidato — Resultados y Perfil Estratégico
-          </span>
-          <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-            Recomendaciones · Universidades Priorizadas · Composición de Seleccionados
           </span>
         </div>
 
@@ -169,15 +163,12 @@ export const LecturasDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp
         <CardsComposicionSeleccionados lecturas={lecturas} />
       </section>
 
-      {/* 3. Sección Evaluador — Vista Operativa (SEGUNDA SECCIÓN SEGÚN REQUERIMIENTO) */}
+      {/* 3. Sección Evaluador — Seguimiento Operativo (Azul Deep Navy) */}
       <section className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 uppercase tracking-wider bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-[#152238]" />
             3. Sección Evaluador — Seguimiento Operativo
-          </span>
-          <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-            13 Evaluadores con Criterio de Semáforo Confirmado
           </span>
         </div>
         <EvaluadoresTable evaluadores={evaluadores} />

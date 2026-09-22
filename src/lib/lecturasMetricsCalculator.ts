@@ -206,7 +206,34 @@ export function calculateEvaluadoresSummary(lecturas: LecturaRecord[]): Evaluado
 }
 
 /**
- * Desglose detallado de categorías del modelo vs evaluador
+ * Normaliza y acorta las etiquetas de categorías del modelo según especificación:
+ * "Pasar", "Tiene factor Ñ", "Rechazar", "Comité"
+ */
+export function shortenModeloCategory(raw: string | null | undefined): string {
+  const m = stripHtml(raw).toLowerCase().trim();
+  if (!m) return 'Sin recomendación';
+  if (m.includes('factor ñ') || m.includes('factor n')) return 'Tiene factor Ñ';
+  if (m.includes('comit')) return 'Comité';
+  if (m.includes('rechaz')) return 'Rechazar';
+  if (m.includes('pas')) return 'Pasar';
+  return stripHtml(raw);
+}
+
+/**
+ * Normaliza y acorta las etiquetas de categorías del evaluador según especificación:
+ * "Pasa a entrevista", "No pasa", "Descalificado (plagio)"
+ */
+export function shortenEvaluadorCategory(raw: string | null | undefined): string {
+  const e = stripHtml(raw).toLowerCase().trim();
+  if (!e) return 'Sin registrar';
+  if (e.includes('plagio') || e.includes('descalific')) return 'Descalificado (plagio)';
+  if (e.includes('no pasa') || e.includes('rechaz')) return 'No pasa';
+  if (e.includes('pas') || e.includes('entrevista')) return 'Pasa a entrevista';
+  return stripHtml(raw);
+}
+
+/**
+ * Desglose detallado de categorías del modelo vs evaluador con etiquetas cortas y legibles
  */
 export function calculateModeloVsEvaluadorBreakdown(lecturas: LecturaRecord[]): {
   totalLeidos: number;
@@ -227,11 +254,11 @@ export function calculateModeloVsEvaluadorBreakdown(lecturas: LecturaRecord[]): 
   let evaluadorPasaCount = 0;
 
   leidos.forEach(l => {
-    const modRaw = stripHtml(l.recomendacion_modelo) || 'Sin recomendación';
-    const evRaw = stripHtml(l.opinion_evaluador) || 'Sin registrar';
+    const modShort = shortenModeloCategory(l.recomendacion_modelo);
+    const evShort = shortenEvaluadorCategory(l.opinion_evaluador);
 
-    modeloMap.set(modRaw, (modeloMap.get(modRaw) || 0) + 1);
-    evaluadorMap.set(evRaw, (evaluadorMap.get(evRaw) || 0) + 1);
+    modeloMap.set(modShort, (modeloMap.get(modShort) || 0) + 1);
+    evaluadorMap.set(evShort, (evaluadorMap.get(evShort) || 0) + 1);
 
     if (isModeloRecomiendaPasar(l.recomendacion_modelo)) {
       modeloPasaCount += 1;
@@ -246,7 +273,7 @@ export function calculateModeloVsEvaluadorBreakdown(lecturas: LecturaRecord[]): 
 
   // Convertir a lista de categorías con banderas de 'isPass'
   const modeloCategories: CategoryBreakdownItem[] = Array.from(modeloMap.entries()).map(([label, count]) => {
-    const isPass = isModeloRecomiendaPasar(label);
+    const isPass = label === 'Pasar' || label === 'Tiene factor Ñ';
     const pct = totalLeidos > 0 ? Math.round((count / totalLeidos) * 1000) / 10 : 0;
     return { label, count, pct, isPass };
   });
@@ -259,7 +286,7 @@ export function calculateModeloVsEvaluadorBreakdown(lecturas: LecturaRecord[]): 
   });
 
   const evaluadorCategories: CategoryBreakdownItem[] = Array.from(evaluadorMap.entries()).map(([label, count]) => {
-    const isPass = isEvaluadorRecomiendaPasar(label);
+    const isPass = label === 'Pasa a entrevista';
     const pct = totalLeidos > 0 ? Math.round((count / totalLeidos) * 1000) / 10 : 0;
     return { label, count, pct, isPass };
   });
@@ -586,75 +613,111 @@ export function calculateGeneroBreakdown(lecturas: LecturaRecord[]): {
 }
 
 /**
- * 5. Desglose de Ciudades de Nacimiento sobre seleccionados
- * Foco estratégico confirmado: Cali, Medellín, Barranquilla (cultivación territorial)
+ * Normaliza nombres de ciudades para consolidación limpia
+ */
+export function normalizeCityName(raw: string | null | undefined): string {
+  if (!raw) return 'Otras ciudades';
+  const trimmed = raw.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower.includes('cali')) return 'Cali';
+  if (lower.includes('bogot')) return 'Bogotá, D.C.';
+  if (lower.includes('medell')) return 'Medellín';
+  if (lower.includes('barranquilla')) return 'Barranquilla';
+  if (lower.includes('cúcuta') || lower.includes('cucuta')) return 'Cúcuta';
+  if (lower.includes('pasto')) return 'Pasto';
+  if (lower.includes('palmira')) return 'Palmira';
+  if (lower.includes('bucaramanga')) return 'Bucaramanga';
+  if (lower.includes('pereira')) return 'Pereira';
+  if (lower.includes('ipiales')) return 'Ipiales';
+  if (lower.includes('neiva')) return 'Neiva';
+  if (lower.includes('manizales')) return 'Manizales';
+  if (lower.includes('popay')) return 'Popayán';
+  return trimmed;
+}
+
+export interface CityLeaderboardItem {
+  rank: number;
+  label: string;
+  count: number;
+  pct: number;
+  magnitudePct: number;
+  isFoco: boolean;
+}
+
+/**
+ * 5. Desglose de Ciudades de Nacimiento en formato Leaderboard / Ranking
+ * Ordenado de mayor a menor con barra de magnitud relativa frente a la ciudad líder
  */
 export function calculateCiudadesBreakdown(lecturas: LecturaRecord[]): {
-  items: Array<{ label: string; count: number; pct: number; color: string; isFoco: boolean }>;
+  items: CityLeaderboardItem[];
   totalSeleccionados: number;
+  maxCityCount: number;
+  focoCitiesCount: number;
+  focoCitiesPct: number;
 } {
   const leidos = lecturas.filter(l => l.completado);
   const seleccionados = leidos.filter(l => isEvaluadorRecomiendaPasar(l.opinion_evaluador));
   const total = seleccionados.length > 0 ? seleccionados.length : 332;
 
-  let caliCount = 0;
-  let medellinCount = 0;
-  let barranquillaCount = 0;
-  let bogotaCount = 0;
-  let otrasCount = 0;
+  const cityMap = new Map<string, number>();
 
   seleccionados.forEach(s => {
-    const cNorm = String(s.ciudad || '').toLowerCase().trim();
-    if (cNorm.includes('cali')) {
-      caliCount++;
-    } else if (cNorm.includes('medell') || cNorm.includes('medellin') || cNorm.includes('medellín')) {
-      medellinCount++;
-    } else if (cNorm.includes('barranquilla')) {
-      barranquillaCount++;
-    } else if (cNorm.includes('bogot') || cNorm.includes('bogota') || cNorm.includes('bogotá')) {
-      bogotaCount++;
-    } else {
-      otrasCount++;
-    }
+    const name = normalizeCityName(s.ciudad);
+    cityMap.set(name, (cityMap.get(name) || 0) + 1);
   });
 
-  const items = [
-    {
-      label: 'Cali',
-      count: caliCount,
-      pct: Math.round((caliCount / total) * 1000) / 10,
-      color: '#2E9E82', // Emerald - Foco
-      isFoco: true
-    },
-    {
-      label: 'Barranquilla',
-      count: barranquillaCount,
-      pct: Math.round((barranquillaCount / total) * 1000) / 10,
-      color: '#2E9E82', // Emerald - Foco
-      isFoco: true
-    },
-    {
-      label: 'Medellín',
-      count: medellinCount,
-      pct: Math.round((medellinCount / total) * 1000) / 10,
-      color: '#2E9E82', // Emerald - Foco
-      isFoco: true
-    },
-    {
-      label: 'Bogotá, D.C.',
-      count: bogotaCount,
-      pct: Math.round((bogotaCount / total) * 1000) / 10,
-      color: '#152238', // Deep Navy
-      isFoco: false
-    },
-    {
-      label: 'Otras Ciudades',
-      count: otrasCount,
-      pct: Math.round((otrasCount / total) * 1000) / 10,
-      color: '#64748B', // Slate
-      isFoco: false
-    }
-  ];
+  // Ordenar de mayor a menor cantidad
+  const sortedCities = Array.from(cityMap.entries()).sort((a, b) => b[1] - a[1]);
 
-  return { items, totalSeleccionados: total };
+  const maxCityCount = sortedCities.length > 0 ? sortedCities[0][1] : 1;
+
+  // Seleccionar top 7 ciudades individuales y agrupar el resto en "Otras ciudades"
+  const topCutoff = 7;
+  const topCities = sortedCities.slice(0, topCutoff);
+  const remainingCities = sortedCities.slice(topCutoff);
+
+  const items: CityLeaderboardItem[] = [];
+
+  topCities.forEach(([name, count], index) => {
+    const isFoco = name === 'Cali' || name === 'Barranquilla' || name === 'Medellín';
+    const pct = Math.round((count / total) * 1000) / 10;
+    const magnitudePct = Math.round((count / maxCityCount) * 100);
+    items.push({
+      rank: index + 1,
+      label: name,
+      count,
+      pct,
+      magnitudePct,
+      isFoco
+    });
+  });
+
+  const remainingCount = remainingCities.reduce((acc, curr) => acc + curr[1], 0);
+  if (remainingCount > 0) {
+    const pct = Math.round((remainingCount / total) * 1000) / 10;
+    const magnitudePct = Math.round((remainingCount / maxCityCount) * 100);
+    items.push({
+      rank: topCities.length + 1,
+      label: `Otras (${remainingCities.length} ciudades)`,
+      count: remainingCount,
+      pct,
+      magnitudePct: Math.min(100, magnitudePct),
+      isFoco: false
+    });
+  }
+
+  // Foco estratégico: Cali, Barranquilla, Medellín
+  const caliCount = cityMap.get('Cali') || 0;
+  const barCount = cityMap.get('Barranquilla') || 0;
+  const medCount = cityMap.get('Medellín') || 0;
+  const focoCitiesCount = caliCount + barCount + medCount;
+  const focoCitiesPct = Math.round((focoCitiesCount / total) * 1000) / 10;
+
+  return {
+    items,
+    totalSeleccionados: total,
+    maxCityCount,
+    focoCitiesCount,
+    focoCitiesPct
+  };
 }
