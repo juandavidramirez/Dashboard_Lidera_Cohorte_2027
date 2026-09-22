@@ -166,3 +166,59 @@ export interface FilterState {
   ineligibilityReason: string; // 'ALL' | specific reason
   dateRange: { start: string; end: string };
 }
+
+// ==========================================
+// TIPOS PARA PROCESO DE LECTURAS (COHORTE 2027)
+// ==========================================
+
+export interface LecturaRecord {
+  primera_lectura_id: string;
+  id_contacto: string;
+  evaluador: string;
+  completado: boolean;
+  opinion_evaluador?: string | null;
+  recomendacion_modelo?: string | null;
+  // Campos cruzados desde candidates_convocatoria
+  uni_prioritaria?: string | null;
+  is_bilingual?: boolean | null;
+  eligibility?: string | null;
+  full_name?: string | null;
+  university_normalized?: string | null;
+  career?: string | null;
+  form_completo?: string | null;
+}
+
+export type EvaluadorStatus = 'On track' | 'Medio' | 'Atrasado';
+
+export interface EvaluadorSummary {
+  evaluador: string;
+  asignados: number;
+  completados: number;
+  avancePct: number;
+  estado: EvaluadorStatus;
+}
+
+export type PerfilFilterType = 'uni_prioritaria' | 'is_bilingual' | 'or' | 'and';
+
+export interface CategoryBreakdownItem {
+  label: string;
+  count: number;
+  pct: number;
+  isPass: boolean;
+}
+
+export interface LecturasGeneralKpis {
+  completadasCount: number;
+  metaGlobal: number;
+  avanceGlobalPct: number;
+  seleccionadosCount: number;
+  totalCumplenMinimos: number;
+  tasaExitoPct: number;
+  evaluadoresAtrasadosCount: number;
+  totalEvaluadores: number;
+  modeloPasaPct: number;
+  modeloPasaCount: number;
+  evaluadorPasaPct: number;
+  evaluadorPasaCount: number;
+  totalLeidos: number;
+}

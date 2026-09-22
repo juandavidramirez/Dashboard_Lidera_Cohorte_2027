@@ -28,6 +28,9 @@ import { UniversityModuleScorecards } from './components/UniversityModuleScoreca
 import { GoalSettings } from './components/GoalSettings';
 import { AuxiliaryIndicatorsModule } from './components/AuxiliaryIndicatorsModule';
 import { ToastContainer, ToastMessage } from './components/Toast';
+import { LecturasDashboardView } from './components/lecturas/LecturasDashboardView';
+import { GeneralFunnelPlaceholder } from './components/GeneralFunnelPlaceholder';
+import { lecturasDataStore } from './lib/lecturasDataStore';
 
 export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -39,6 +42,16 @@ export default function App() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [lecturasCompletadas, setLecturasCompletadas] = useState(() => {
+    return lecturasDataStore.getLecturas().filter(l => l.completado).length;
+  });
+
+  useEffect(() => {
+    const unsub = lecturasDataStore.subscribe(() => {
+      setLecturasCompletadas(lecturasDataStore.getLecturas().filter(l => l.completado).length);
+    });
+    return () => unsub();
+  }, []);
 
   // Subscribe to dataStore updates and fetch 2025 comparison data
   useEffect(() => {
@@ -183,10 +196,19 @@ export default function App() {
           candidateCount={completedCandidates.length}
           incompleteCandidateCount={incompleteCandidates.length}
           eligibleCount={eligibleCount}
+          lecturasCompletadasCount={lecturasCompletadas}
         />
 
         {/* Main Dashboard Content */}
         <main className="flex-1 min-w-0 space-y-6">
+          {activeTab === 'general_funnel' && (
+            <GeneralFunnelPlaceholder />
+          )}
+
+          {activeTab === 'lecturas_progress' && (
+            <LecturasDashboardView totalCumplenMinimosProp={eligibleCount} />
+          )}
+
           {activeTab === 'overview' && (
             <div className="space-y-8">
               {/* Nivel 1: Indicadores Top-Line Prioritarios */}
