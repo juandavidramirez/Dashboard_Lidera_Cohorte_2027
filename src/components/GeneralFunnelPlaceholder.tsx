@@ -1,11 +1,20 @@
 import React from 'react';
-import { Network, ArrowRight, Sparkles, Clock, CheckCircle2 } from 'lucide-react';
+import { Network, Sparkles, Clock } from 'lucide-react';
+import { DashboardViewHeader } from './common/DashboardViewHeader';
 
 export const GeneralFunnelPlaceholder: React.FC = () => {
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-2xs text-center max-w-2xl mx-auto space-y-6 my-12">
-        <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-[#F2A900]">
+      <DashboardViewHeader
+        dashboardName="Dashboard General"
+        viewName="Embudo Completo de Selección"
+        theme="purple"
+        cohortBadge="Cohorte 2027"
+        subtitle="Visión 360° del embudo integral de selección, conectando las 4 etapas desde la postulación hasta la matrícula final."
+      />
+
+      <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-2xs text-center max-w-2xl mx-auto space-y-6 my-8">
+        <div className="w-16 h-16 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center mx-auto text-purple-700">
           <Network className="w-8 h-8" />
         </div>
 

@@ -26,26 +26,16 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
   const genero = calculateGeneroBreakdown(lecturas);
   const ciudades = calculateCiudadesBreakdown(lecturas);
 
-  const totalSel = tipoPregrado.totalSeleccionados;
-
   return (
     <div className="space-y-4">
-      {/* Subheader descriptivo conciso */}
-      <div className="flex items-center justify-between px-1">
-        <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-950 uppercase tracking-wider bg-amber-100/90 border border-amber-300 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-amber-600" />
-          Composición del Grupo Seleccionado ({totalSel.toLocaleString()} candidatos)
-        </span>
-      </div>
-
       {/* Grid de los 4 desgloses demográficos y académicos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Profesionales vs. Licenciados */}
         <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs flex flex-col justify-between">
-          <div className="bg-[#854D0E] px-3.5 py-2 flex items-center justify-between border-b border-amber-700">
-            <div className="flex items-center gap-2 text-white">
-              <GraduationCap className="w-4 h-4 text-amber-200" />
-              <h4 className="text-xs font-bold uppercase tracking-wider">
+          <div className="bg-[#F2A900] px-3.5 py-2 flex items-center justify-between border-b border-amber-300">
+            <div className="flex items-center gap-2 text-slate-950">
+              <GraduationCap className="w-4 h-4 text-slate-950" />
+              <h4 className="text-xs font-black uppercase tracking-wider">
                 Pregrado
               </h4>
             </div>
@@ -81,10 +71,10 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
 
         {/* 2. STEM / Enfoque (4 categorías) */}
         <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs flex flex-col justify-between">
-          <div className="bg-[#854D0E] px-3.5 py-2 flex items-center justify-between border-b border-amber-700">
-            <div className="flex items-center gap-2 text-white">
-              <Sparkles className="w-4 h-4 text-amber-200" />
-              <h4 className="text-xs font-bold uppercase tracking-wider">
+          <div className="bg-[#F2A900] px-3.5 py-2 flex items-center justify-between border-b border-amber-300">
+            <div className="flex items-center gap-2 text-slate-950">
+              <Sparkles className="w-4 h-4 text-slate-950" />
+              <h4 className="text-xs font-black uppercase tracking-wider">
                 Enfoque / STEM
               </h4>
             </div>
@@ -122,10 +112,10 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
 
         {/* 3. Rangos de Edad */}
         <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs flex flex-col justify-between">
-          <div className="bg-[#854D0E] px-3.5 py-2 flex items-center justify-between border-b border-amber-700">
-            <div className="flex items-center gap-2 text-white">
-              <Calendar className="w-4 h-4 text-amber-200" />
-              <h4 className="text-xs font-bold uppercase tracking-wider">
+          <div className="bg-[#F2A900] px-3.5 py-2 flex items-center justify-between border-b border-amber-300">
+            <div className="flex items-center gap-2 text-slate-950">
+              <Calendar className="w-4 h-4 text-slate-950" />
+              <h4 className="text-xs font-black uppercase tracking-wider">
                 Rangos de Edad
               </h4>
             </div>
@@ -161,10 +151,10 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
 
         {/* 4. Género */}
         <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs flex flex-col justify-between">
-          <div className="bg-[#854D0E] px-3.5 py-2 flex items-center justify-between border-b border-amber-700">
-            <div className="flex items-center gap-2 text-white">
-              <Users className="w-4 h-4 text-amber-200" />
-              <h4 className="text-xs font-bold uppercase tracking-wider">
+          <div className="bg-[#F2A900] px-3.5 py-2 flex items-center justify-between border-b border-amber-300">
+            <div className="flex items-center gap-2 text-slate-950">
+              <Users className="w-4 h-4 text-slate-950" />
+              <h4 className="text-xs font-black uppercase tracking-wider">
                 Género
               </h4>
             </div>
@@ -201,14 +191,14 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
 
       {/* 5. Gráfico de Ciudad — Leaderboard Ranking con Barras de Magnitud */}
       <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs">
-        <div className="bg-[#854D0E] px-4 py-2.5 flex items-center justify-between border-b border-amber-700 flex-wrap gap-2">
-          <div className="flex items-center gap-2 text-white">
-            <MapPin className="w-4 h-4 text-amber-200" />
-            <h4 className="text-xs font-bold uppercase tracking-wider">
+        <div className="bg-[#F2A900] px-4 py-2.5 flex items-center justify-between border-b border-amber-300 flex-wrap gap-2">
+          <div className="flex items-center gap-2 text-slate-950">
+            <MapPin className="w-4 h-4 text-slate-950" />
+            <h4 className="text-xs font-black uppercase tracking-wider">
               Ciudad de Nacimiento — Ranking Territorial
             </h4>
           </div>
-          <span className="text-[10px] font-bold text-amber-100 bg-amber-950/60 border border-amber-600/50 px-2 py-0.5 rounded">
+          <span className="text-[10px] font-bold text-slate-900 bg-white/80 border border-amber-400 px-2 py-0.5 rounded shadow-2xs">
             Foco Territorial: Cali · Barranquilla · Medellín ({ciudades.focoCitiesCount} · {ciudades.focoCitiesPct}%)
           </span>
         </div>
@@ -229,7 +219,7 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
                 <tr
                   key={c.label}
                   className={`transition-colors ${
-                    c.isFoco ? 'bg-amber-50/50 font-semibold' : 'hover:bg-slate-50/80'
+                    c.isFoco ? 'bg-amber-50/60 font-semibold' : 'hover:bg-slate-50/80'
                   }`}
                 >
                   <td className="py-2 px-2.5 text-slate-400 font-mono text-[11px]">
@@ -239,7 +229,7 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
                     <div className="flex items-center gap-1.5">
                       <span>{c.label}</span>
                       {c.isFoco && (
-                        <span className="text-[9px] font-bold bg-amber-200 text-amber-900 border border-amber-400 px-1.5 py-0.2 rounded">
+                        <span className="text-[9px] font-bold bg-[#F2A900] text-slate-950 border border-amber-400 px-1.5 py-0.2 rounded">
                           Foco
                         </span>
                       )}
@@ -249,7 +239,7 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ lecturas }) => 
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          c.isFoco ? 'bg-amber-600' : 'bg-slate-500'
+                          c.isFoco ? 'bg-[#F2A900]' : 'bg-[#152238]'
                         }`}
                         style={{ width: `${Math.max(c.magnitudePct, 2)}%` }}
                         title={`Magnitud: ${c.count} vs ${ciudades.maxCityCount} de la ciudad líder`}

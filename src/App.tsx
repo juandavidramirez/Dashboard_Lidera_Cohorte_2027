@@ -30,6 +30,8 @@ import { AuxiliaryIndicatorsModule } from './components/AuxiliaryIndicatorsModul
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { LecturasDashboardView } from './components/lecturas/LecturasDashboardView';
 import { GeneralFunnelPlaceholder } from './components/GeneralFunnelPlaceholder';
+import { SectionLevelHeader } from './components/common/SectionLevelHeader';
+import { DashboardViewHeader } from './components/common/DashboardViewHeader';
 import { lecturasDataStore } from './lib/lecturasDataStore';
 
 export default function App() {
@@ -37,7 +39,8 @@ export default function App() {
   const [goals, setGoals] = useState<GoalTarget[]>([]);
   const [universities, setUniversities] = useState<UniversityMapping[]>([]);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  // Vista de entrada por defecto: Dashboard de Lecturas (foco activo)
+  const [activeTab, setActiveTab] = useState<ActiveTab>('lecturas_progress');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -152,6 +155,35 @@ export default function App() {
     }
   };
 
+  const handleSyncLecturas = async () => {
+    setIsSyncing(true);
+    const success = await lecturasDataStore.loadFromSupabase();
+    setIsSyncing(false);
+    if (success) {
+      addToast(
+        'success',
+        'Lecturas Sincronizadas',
+        'Se actualizaron los registros del proceso de lecturas desde Supabase.'
+      );
+    } else {
+      addToast('info', 'Lecturas Actualizadas', 'Se han refrescado los registros de evaluación.');
+    }
+  };
+
+  const handleSyncAll = async () => {
+    setIsSyncing(true);
+    await Promise.all([
+      dataStore.loadFromSupabase(),
+      lecturasDataStore.loadFromSupabase()
+    ]);
+    setIsSyncing(false);
+    addToast(
+      'success',
+      'Sincronización Completa',
+      'Todas las fuentes (Convocatoria y Lecturas) han sido actualizadas.'
+    );
+  };
+
   const handleResetData = () => {
     if (confirm('¿Deseas restablecer los datos del dashboard a los valores iniciales de prueba?')) {
       dataStore.resetToDefault();
@@ -183,9 +215,13 @@ export default function App() {
       {/* Top Header */}
       <Header
         onSyncSheets={handleSyncSheets}
+        onSyncLecturas={handleSyncLecturas}
+        onSyncAll={handleSyncAll}
         onResetData={handleResetData}
         isSyncing={isSyncing}
         totalCandidatesCount={completedCandidates.length}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
 
       <div className="flex-1 flex flex-col md:flex-row w-full mx-auto p-4 md:p-6 gap-6">
@@ -211,8 +247,22 @@ export default function App() {
 
           {activeTab === 'overview' && (
             <div className="space-y-8">
+              {/* Encabezado Principal del Dashboard con Jerarquía Visual */}
+              <DashboardViewHeader
+                dashboardName="Dashboard Convocatoria"
+                viewName="Tablero Principal"
+                theme="amber"
+                cohortBadge="Cohorte 2027"
+                subtitle="Monitoreo estratégico del funnel de atracción, cumplimiento de requisitos mínimos y dinámicas de postulación."
+              />
+
               {/* Nivel 1: Indicadores Top-Line Prioritarios */}
               <section className="space-y-4">
+                <SectionLevelHeader
+                  level={1}
+                  title="Indicadores Top-Line Prioritarios"
+                  theme="amber"
+                />
                 <KpiHeaderBand
                   eligibleCount={eligibleCount}
                   totalCandidatesCount={completedCandidates.length}
@@ -227,14 +277,11 @@ export default function App() {
 
               {/* Nivel 2: Dinámica Temporal y Canales de Atracción */}
               <section className="space-y-4">
-                <div className="flex items-center gap-3 border-b-2 border-amber-400 pb-2">
-                  <span className="bg-[#F2A900] text-slate-950 text-xs font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-2xs">
-                    Nivel 2
-                  </span>
-                  <h2 className="text-sm font-black text-[#152238] uppercase tracking-wide">
-                    Dinámica Temporal, Composición y Canales de Atracción
-                  </h2>
-                </div>
+                <SectionLevelHeader
+                  level={2}
+                  title="Dinámica Temporal, Composición y Canales de Atracción"
+                  theme="amber"
+                />
 
                 {/* 2x2 Panel Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -264,14 +311,11 @@ export default function App() {
 
               {/* Nivel 3: Perfil Académico y Distribución Geográfica */}
               <section className="space-y-4">
-                <div className="flex items-center gap-3 border-b-2 border-[#152238] pb-2">
-                  <span className="bg-[#152238] text-white text-xs font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-2xs">
-                    Nivel 3
-                  </span>
-                  <h2 className="text-sm font-black text-[#152238] uppercase tracking-wide">
-                    Perfil Académico, Idioma y Distribución Geográfica
-                  </h2>
-                </div>
+                <SectionLevelHeader
+                  level={3}
+                  title="Perfil Académico, Idioma y Distribución Geográfica"
+                  theme="navy"
+                />
 
                 {/* Perfil Académico (Nivel de Inglés + Tipo de Pregrado) */}
                 <PanelAcademicProfile candidates={completedCandidates} />
@@ -284,6 +328,13 @@ export default function App() {
 
           {activeTab === 'candidates' && (
             <div className="space-y-6">
+              <DashboardViewHeader
+                dashboardName="Dashboard Convocatoria"
+                viewName="Registros Completados"
+                theme="amber"
+                cohortBadge="Cohorte 2027"
+                subtitle="Listado y gestión exhaustiva de candidatos que completaron exitosamente el formulario de postulación."
+              />
               <CandidateTable
                 candidates={completedCandidates}
                 title="Registros Completados del Formulario"
@@ -301,6 +352,13 @@ export default function App() {
 
           {activeTab === 'incomplete_candidates' && (
             <div className="space-y-6">
+              <DashboardViewHeader
+                dashboardName="Dashboard Convocatoria"
+                viewName="Registros Incompletos"
+                theme="amber"
+                cohortBadge="Cohorte 2027"
+                subtitle="Postulantes iniciados con formulario pendiente y análisis de elegibilidad potencial preliminar."
+              />
               <CandidateTable
                 candidates={incompleteCandidates}
                 title="Registros Incompletos del Formulario"
@@ -319,6 +377,13 @@ export default function App() {
 
           {activeTab === 'universities' && (
             <div className="space-y-6">
+              <DashboardViewHeader
+                dashboardName="Dashboard Convocatoria"
+                viewName="Universidades"
+                theme="amber"
+                cohortBadge="Cohorte 2027"
+                subtitle="Mapeo territorial, categorización QS / Priorizadas y motor de normalización de instituciones educativas."
+              />
               {/* 4 Scorecards for Universities Module */}
               <UniversityModuleScorecards candidates={completedCandidates} />
 
@@ -333,12 +398,28 @@ export default function App() {
 
           {activeTab === 'auxiliary_charts' && (
             <div className="space-y-6">
+              <DashboardViewHeader
+                dashboardName="Dashboard Convocatoria"
+                viewName="Gráficas e Indicadores Auxiliares"
+                theme="amber"
+                cohortBadge="Cohorte 2027"
+                subtitle="Análisis complementario de fuentes de atracción, cohortes previas y desglose por regiones."
+              />
               <AuxiliaryIndicatorsModule candidates={completedCandidates} />
             </div>
           )}
 
           {activeTab === 'goals' && (
-            <GoalSettings goals={synchronizedGoals} onUpdateGoal={handleUpdateGoal} />
+            <div className="space-y-6">
+              <DashboardViewHeader
+                dashboardName="Dashboard Convocatoria"
+                viewName="Estructura de Metas"
+                theme="amber"
+                cohortBadge="Cohorte 2027"
+                subtitle="Definición y calibración de metas operativas por etapa y cuotas estratégicas del programa."
+              />
+              <GoalSettings goals={synchronizedGoals} onUpdateGoal={handleUpdateGoal} />
+            </div>
           )}
         </main>
       </div>

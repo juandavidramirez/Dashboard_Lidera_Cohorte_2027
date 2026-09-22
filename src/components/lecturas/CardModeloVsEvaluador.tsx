@@ -12,16 +12,16 @@ export const CardModeloVsEvaluador: React.FC<Props> = ({ lecturas }) => {
 
   return (
     <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs flex flex-col h-full">
-      {/* Title Strip in Candidato Warm Amber */}
-      <div className="bg-[#854D0E] px-4 py-2.5 flex items-center justify-between gap-2 border-b border-amber-700">
+      {/* Title Strip in Brand Yellow-Orange #F2A900 */}
+      <div className="bg-[#F2A900] px-4 py-2.5 flex items-center justify-between gap-2 border-b border-amber-300">
         <div className="flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-amber-200" />
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+          <Cpu className="w-4 h-4 text-slate-950" />
+          <h3 className="text-xs font-black text-slate-950 uppercase tracking-wider">
             Recomendación del Modelo vs. Opinión del Evaluador
           </h3>
         </div>
 
-        <span className="text-[10px] bg-amber-950/60 text-amber-200 font-bold px-2 py-0.5 rounded border border-amber-600/50 font-mono">
+        <span className="text-[10px] bg-[#152238] text-white font-bold px-2 py-0.5 rounded shadow-2xs font-mono">
           {breakdown.totalLeidos.toLocaleString()} evaluados
         </span>
       </div>
@@ -34,7 +34,7 @@ export const CardModeloVsEvaluador: React.FC<Props> = ({ lecturas }) => {
             <div>
               <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-amber-700" />
+                  <Cpu className="w-3.5 h-3.5 text-amber-600" />
                   Modelo (IA)
                 </span>
                 <span className="text-[11px] font-bold text-slate-500 font-mono">
@@ -44,7 +44,7 @@ export const CardModeloVsEvaluador: React.FC<Props> = ({ lecturas }) => {
 
               {/* Scorecard limpio */}
               <div className="mt-2.5 mb-3 flex items-baseline gap-2">
-                <span className="text-3xl font-black text-amber-900">
+                <span className="text-3xl font-black text-[#152238]">
                   {breakdown.modeloPasaPct}%
                 </span>
                 <span className="text-xs font-bold text-slate-600">

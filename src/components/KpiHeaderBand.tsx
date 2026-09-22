@@ -56,13 +56,9 @@ export const KpiHeaderBand: React.FC<Props> = ({
 
   return (
     <div className="mb-6">
-      {/* Level 1 Title Banner */}
+      {/* Supplementary Status Pills */}
       <div className="mb-3 flex items-center justify-between px-1 flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-900 uppercase tracking-wider bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            Nivel 1 — Indicadores Top-Line Prioritarios
-          </span>
           <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
             <FileX className="w-3.5 h-3.5 text-slate-500" />
             Formularios Incompletos: <strong className="text-slate-900 font-black">{incompleteFormsCount.toLocaleString()}</strong>

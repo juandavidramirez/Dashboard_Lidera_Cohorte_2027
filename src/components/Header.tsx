@@ -1,31 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   RefreshCw,
   RotateCcw,
   Database,
   X,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  LayoutDashboard,
+  BookOpen,
+  Network,
+  ExternalLink
 } from 'lucide-react';
 import { dataStore } from '../lib/dataStore';
 import { supabaseUrl, setCustomSupabaseCredentials, clearCustomSupabaseCredentials } from '../lib/supabase';
+import { ActiveTab } from './Sidebar';
 
 interface Props {
   onSyncSheets: () => void;
+  onSyncLecturas?: () => void;
+  onSyncAll?: () => void;
   onResetData: () => void;
   isSyncing: boolean;
   totalCandidatesCount: number;
+  activeTab?: ActiveTab;
+  setActiveTab?: (tab: ActiveTab) => void;
 }
 
 export const Header: React.FC<Props> = ({
   onSyncSheets,
+  onSyncLecturas,
+  onSyncAll,
   onResetData,
-  isSyncing
+  isSyncing,
+  activeTab,
+  setActiveTab
 }) => {
   const supabaseStatus = dataStore.getSupabaseStatus();
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [urlInput, setUrlInput] = useState(supabaseUrl || '');
   const [keyInput, setKeyInput] = useState('');
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +70,13 @@ export const Header: React.FC<Props> = ({
     if (confirm('¿Deseas desvincular las credenciales personalizadas de Supabase?')) {
       clearCustomSupabaseCredentials();
     }
+  };
+
+  const handleNavigate = (tab: ActiveTab) => {
+    if (setActiveTab) {
+      setActiveTab(tab);
+    }
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -76,21 +115,190 @@ export const Header: React.FC<Props> = ({
             </span>
           </button>
 
-          {/* Sync Button (Google Sheets / Supabase Real-Time) */}
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs font-semibold text-emerald-800">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="hidden md:inline">Google Sheets / Supabase</span>
+          {/* Menú Desplegable de Fuentes de Datos por Sección */}
+          <div className="relative" ref={dropdownRef}>
             <button
-              onClick={onSyncSheets}
-              disabled={isSyncing}
-              title="Cargar/Refrescar datos en tiempo real desde Supabase"
-              className="p-1 hover:bg-emerald-200/60 rounded text-emerald-900 transition-colors disabled:opacity-50 flex items-center gap-1"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+              className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-all border shadow-2xs cursor-pointer ${
+                isDropdownOpen
+                  ? 'bg-emerald-100 border-emerald-300 text-emerald-950 ring-2 ring-emerald-400/20'
+                  : 'bg-emerald-50 hover:bg-emerald-100/70 border-emerald-200/90 text-emerald-900'
+              }`}
+              title="Haz clic para ver y actualizar las fuentes de datos por sección"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="hidden md:inline font-bold">Google Sheets / Supabase</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-emerald-700 transition-transform duration-200 ${
+                  isDropdownOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 animate-in fade-in-50 zoom-in-95 duration-100">
+                {/* Header del dropdown */}
+                <div className="p-3.5 bg-slate-50 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      Fuentes de Datos
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Actualiza o navega a cada sección del dashboard
+                    </p>
+                  </div>
+                  {onSyncAll && (
+                    <button
+                      onClick={() => {
+                        onSyncAll();
+                        setIsDropdownOpen(false);
+                      }}
+                      disabled={isSyncing}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition-colors shadow-2xs disabled:opacity-50"
+                      title="Actualizar todas las fuentes concurrentemente"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>Actualizar Todo</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Lista de Secciones */}
+                <div className="p-2 space-y-1.5">
+                  {/* 1. Dashboard de Convocatoria */}
+                  <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-amber-50 text-[#F2A900] border border-amber-200">
+                          <LayoutDashboard className="w-4 h-4 text-amber-700" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900">
+                              Dashboard de Convocatoria
+                            </span>
+                            {activeTab === 'overview' && (
+                              <span className="text-[9px] bg-amber-100 text-amber-900 font-extrabold px-1.5 py-0.2 rounded border border-amber-300">
+                                Activo
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-500 block">
+                            Fuente: Google Sheets / candidates_convocatoria
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                      <button
+                        onClick={() => handleNavigate('overview')}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-950 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Ver sección
+                      </button>
+                      <button
+                        onClick={() => {
+                          onSyncSheets();
+                          setIsDropdownOpen(false);
+                        }}
+                        disabled={isSyncing}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#F2A900] text-slate-950 hover:bg-amber-500 px-2.5 py-1 rounded-md transition-colors shadow-2xs disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                        Actualizar datos
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Dashboard de Lecturas */}
+                  <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-emerald-50 text-[#2E9E82] border border-emerald-200">
+                          <BookOpen className="w-4 h-4 text-[#2E9E82]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900">
+                              Dashboard de Lecturas
+                            </span>
+                            {activeTab === 'lecturas_progress' && (
+                              <span className="text-[9px] bg-emerald-100 text-emerald-900 font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
+                                Activo
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-500 block">
+                            Fuente: Supabase (lecturas_progreso)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                      <button
+                        onClick={() => handleNavigate('lecturas_progress')}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-950 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Ver sección
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (onSyncLecturas) onSyncLecturas();
+                          setIsDropdownOpen(false);
+                        }}
+                        disabled={isSyncing}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#152238] text-white hover:bg-slate-800 px-2.5 py-1 rounded-md transition-colors shadow-2xs disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                        Actualizar datos
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3. Dashboard General (Embudo Completo) */}
+                  <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200">
+                          <Network className="w-4 h-4 text-purple-700" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900">
+                              Dashboard General
+                            </span>
+                            <span className="text-[9px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.2 rounded border border-slate-200">
+                              En constr.
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 block">
+                            Embudo consolidado de conversión
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                      <button
+                        onClick={() => handleNavigate('general_funnel')}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-950 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Ver sección
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Reset Local Seed Data */}
@@ -205,6 +413,3 @@ export const Header: React.FC<Props> = ({
     </>
   );
 };
-
-
-
