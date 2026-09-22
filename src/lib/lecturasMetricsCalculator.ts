@@ -82,12 +82,35 @@ export function isLecturaUniPrioritaria(l: LecturaRecord): boolean {
 }
 
 /**
- * Normaliza y clasifica si el candidato leido es bilingüe.
+ * Normaliza y clasifica si el candidato leido es bilingüe (B2+).
  */
 export function isLecturaBilingual(l: LecturaRecord): boolean {
   if (typeof l.is_bilingual === 'boolean') return l.is_bilingual;
   const val = String(l.is_bilingual || '').toUpperCase().trim();
   return val === 'TRUE' || val === 'SI' || val === 'SÍ' || val === '1';
+}
+
+/**
+ * Helpers para el campo categórico Enfoque ('STEM y Bilingüe', 'STEM', 'Bilingüe', 'No STEM no Bilingüe')
+ */
+export function isLecturaBilingueEnfoque(l: LecturaRecord): boolean {
+  const enf = String(l.enfoque || '').toLowerCase();
+  if (enf.includes('bilingüe') || enf.includes('bilingue')) return true;
+  return isLecturaBilingual(l);
+}
+
+export function isLecturaStemEnfoque(l: LecturaRecord): boolean {
+  const enf = String(l.enfoque || '').toLowerCase();
+  if (enf.includes('stem')) return true;
+  return Boolean(l.is_stem);
+}
+
+export function isLecturaStemOrBilingue(l: LecturaRecord): boolean {
+  return isLecturaStemEnfoque(l) || isLecturaBilingueEnfoque(l);
+}
+
+export function isLecturaStemAndBilingue(l: LecturaRecord): boolean {
+  return isLecturaStemEnfoque(l) && isLecturaBilingueEnfoque(l);
 }
 
 /**
@@ -260,7 +283,13 @@ export function calculateModeloVsEvaluadorBreakdown(lecturas: LecturaRecord[]): 
 
 /**
  * Calcula los datos para el Card de Perfil de Seleccionados
- * Subconjuntos anidados: Seleccionados ⊆ Leídos ⊆ Total que Cumplen Mínimos
+ * 5 Opciones de filtro según requerimiento confirmado:
+ * 1. 'uni_prioritaria' (standalone)
+ * 2. 'bilingue' (derivado de Enfoque)
+ * 3. 'stem' (derivado de Enfoque)
+ * 4. 'stem_or_bilingue' (OR - STEM o Bilingüe)
+ * 5. 'stem_and_bilingue' (AND - STEM y Bilingüe)
+ * Base de porcentaje: sobre el TOTAL DE SELECCIONADOS (denominador = seleccionados / 332)
  */
 export function calculatePerfilSeleccionadosStat(
   lecturas: LecturaRecord[],
@@ -270,24 +299,25 @@ export function calculatePerfilSeleccionadosStat(
   filtro: PerfilFilterType;
   filtroLabel: string;
   seleccionadosCount: number;
+  totalSeleccionados: number;
   leidosNoSeleccionadosCount: number;
   totalLeidosConPerfilCount: number;
   totalCumplenMinimos: number;
-  pctSeleccionadosSobreTotal: number;
-  pctLeidosNoSelSobreTotal: number;
+  pctSeleccionadosSobreSeleccionados: number;
   pctBarraSeleccionados: number;
-  pctBarraLeidosNoSel: number;
+  pctLeidosNoSelSobreSeleccionados: number;
 } {
   const safeTotalMinimos = totalCumplenMinimos > 0 ? totalCumplenMinimos : 1141;
   const leidos = lecturas.filter(l => l.completado);
+  const seleccionados = leidos.filter(l => isEvaluadorRecomiendaPasar(l.opinion_evaluador));
+  const totalSeleccionados = seleccionados.length > 0 ? seleccionados.length : 332;
 
   const matchesFilter = (l: LecturaRecord): boolean => {
-    const prio = isLecturaUniPrioritaria(l);
-    const bil = isLecturaBilingual(l);
-    if (filtro === 'uni_prioritaria') return prio;
-    if (filtro === 'is_bilingual') return bil;
-    if (filtro === 'or') return prio || bil;
-    if (filtro === 'and') return prio && bil;
+    if (filtro === 'uni_prioritaria') return isLecturaUniPrioritaria(l);
+    if (filtro === 'bilingue') return isLecturaBilingueEnfoque(l);
+    if (filtro === 'stem') return isLecturaStemEnfoque(l);
+    if (filtro === 'stem_or_bilingue') return isLecturaStemOrBilingue(l);
+    if (filtro === 'stem_and_bilingue') return isLecturaStemAndBilingue(l);
     return true;
   };
 
@@ -305,34 +335,326 @@ export function calculatePerfilSeleccionadosStat(
   });
 
   const totalLeidosConPerfilCount = seleccionadosCount + leidosNoSeleccionadosCount;
-  const pctSeleccionadosSobreTotal = safeTotalMinimos > 0 
-    ? Math.round((seleccionadosCount / safeTotalMinimos) * 1000) / 10 
+  const pctSeleccionadosSobreSeleccionados = totalSeleccionados > 0 
+    ? Math.round((seleccionadosCount / totalSeleccionados) * 1000) / 10 
     : 0;
-  const pctLeidosNoSelSobreTotal = safeTotalMinimos > 0 
-    ? Math.round((leidosNoSeleccionadosCount / safeTotalMinimos) * 1000) / 10 
+  const pctLeidosNoSelSobreSeleccionados = totalSeleccionados > 0 
+    ? Math.round((leidosNoSeleccionadosCount / totalSeleccionados) * 1000) / 10 
     : 0;
 
-  // Ancho porcentual de los segmentos en la barra que representa el 100% de los elegibles
-  const pctBarraSeleccionados = Math.min(100, Math.round((seleccionadosCount / safeTotalMinimos) * 1000) / 10);
-  const pctBarraLeidosNoSel = Math.min(100 - pctBarraSeleccionados, Math.round((leidosNoSeleccionadosCount / safeTotalMinimos) * 1000) / 10);
+  const pctBarraSeleccionados = Math.min(100, pctSeleccionadosSobreSeleccionados);
 
   const labelsMap: Record<PerfilFilterType, string> = {
     uni_prioritaria: 'Universidad Priorizada',
-    is_bilingual: 'Bilingüe (B2+)',
-    or: 'Uno u otro (Univ. Priorizada o Bilingüe)',
-    and: 'Ambos (Univ. Priorizada y Bilingüe)'
+    bilingue: 'Bilingüe',
+    stem: 'STEM',
+    stem_or_bilingue: 'STEM o Bilingüe (OR)',
+    stem_and_bilingue: 'STEM y Bilingüe (AND)'
   };
 
   return {
     filtro,
     filtroLabel: labelsMap[filtro],
     seleccionadosCount,
+    totalSeleccionados,
     leidosNoSeleccionadosCount,
     totalLeidosConPerfilCount,
     totalCumplenMinimos: safeTotalMinimos,
-    pctSeleccionadosSobreTotal,
-    pctLeidosNoSelSobreTotal,
+    pctSeleccionadosSobreSeleccionados,
     pctBarraSeleccionados,
-    pctBarraLeidosNoSel
+    pctLeidosNoSelSobreSeleccionados
   };
+}
+
+/**
+ * 1. Desglose de Profesionales vs. Licenciados sobre seleccionados
+ */
+export function calculateTipoPregradoBreakdown(lecturas: LecturaRecord[]): {
+  items: Array<{ label: string; count: number; pct: number; color: string }>;
+  totalSeleccionados: number;
+} {
+  const leidos = lecturas.filter(l => l.completado);
+  const seleccionados = leidos.filter(l => isEvaluadorRecomiendaPasar(l.opinion_evaluador));
+  const total = seleccionados.length > 0 ? seleccionados.length : 332;
+
+  let profesionalCount = 0;
+  let licenciaturaCount = 0;
+  let otroCount = 0;
+
+  seleccionados.forEach(s => {
+    const raw = String(s.tipo_pregrado || '').toLowerCase().trim();
+    if (raw.includes('licenciatura')) {
+      licenciaturaCount++;
+    } else if (raw.includes('profesional')) {
+      profesionalCount++;
+    } else {
+      otroCount++;
+    }
+  });
+
+  const items = [
+    {
+      label: 'Profesional',
+      count: profesionalCount,
+      pct: Math.round((profesionalCount / total) * 1000) / 10,
+      color: '#152238' // Deep Navy
+    },
+    {
+      label: 'Licenciatura',
+      count: licenciaturaCount,
+      pct: Math.round((licenciaturaCount / total) * 1000) / 10,
+      color: '#2E9E82' // Emerald
+    }
+  ];
+
+  if (otroCount > 0) {
+    items.push({
+      label: 'No Plazable / Otro',
+      count: otroCount,
+      pct: Math.round((otroCount / total) * 1000) / 10,
+      color: '#94A3B8'
+    });
+  }
+
+  return { items, totalSeleccionados: total };
+}
+
+/**
+ * 2. Desglose de STEM (4 categorías de Enfoque) sobre seleccionados
+ */
+export function calculateEnfoqueBreakdown(lecturas: LecturaRecord[]): {
+  items: Array<{ label: string; count: number; pct: number; color: string }>;
+  totalSeleccionados: number;
+} {
+  const leidos = lecturas.filter(l => l.completado);
+  const seleccionados = leidos.filter(l => isEvaluadorRecomiendaPasar(l.opinion_evaluador));
+  const total = seleccionados.length > 0 ? seleccionados.length : 332;
+
+  let stemAndBilCount = 0;
+  let stemCount = 0;
+  let bilCount = 0;
+  let noStemNoBilCount = 0;
+
+  seleccionados.forEach(s => {
+    const enf = String(s.enfoque || '').trim();
+    if (enf === 'STEM y Bilingüe') {
+      stemAndBilCount++;
+    } else if (enf === 'STEM') {
+      stemCount++;
+    } else if (enf === 'Bilingüe') {
+      bilCount++;
+    } else {
+      noStemNoBilCount++;
+    }
+  });
+
+  const items = [
+    {
+      label: 'Bilingüe',
+      count: bilCount,
+      pct: Math.round((bilCount / total) * 1000) / 10,
+      color: '#2E9E82' // Emerald
+    },
+    {
+      label: 'STEM',
+      count: stemCount,
+      pct: Math.round((stemCount / total) * 1000) / 10,
+      color: '#152238' // Navy
+    },
+    {
+      label: 'STEM y Bilingüe',
+      count: stemAndBilCount,
+      pct: Math.round((stemAndBilCount / total) * 1000) / 10,
+      color: '#F2A900' // Amber
+    },
+    {
+      label: 'No STEM no Bilingüe',
+      count: noStemNoBilCount,
+      pct: Math.round((noStemNoBilCount / total) * 1000) / 10,
+      color: '#94A3B8' // Slate
+    }
+  ];
+
+  return { items, totalSeleccionados: total };
+}
+
+/**
+ * 3. Desglose de Edades (<22, 22 a 29, >29) sobre seleccionados
+ */
+export function calculateEdadesBreakdown(lecturas: LecturaRecord[]): {
+  items: Array<{ label: string; count: number; pct: number; color: string; sublabel: string }>;
+  totalSeleccionados: number;
+} {
+  const leidos = lecturas.filter(l => l.completado);
+  const seleccionados = leidos.filter(l => isEvaluadorRecomiendaPasar(l.opinion_evaluador));
+  const total = seleccionados.length > 0 ? seleccionados.length : 332;
+
+  let menor22 = 0;
+  let de22a29 = 0;
+  let mayor29 = 0;
+
+  seleccionados.forEach(s => {
+    const edad = typeof s.edad === 'number' ? s.edad : Number(s.edad);
+    if (!isNaN(edad) && edad > 0) {
+      if (edad < 22) menor22++;
+      else if (edad <= 29) de22a29++;
+      else mayor29++;
+    } else {
+      // Default / bucket modal
+      de22a29++;
+    }
+  });
+
+  const items = [
+    {
+      label: '< 22 años',
+      sublabel: 'Jóvenes / Recién egresados',
+      count: menor22,
+      pct: Math.round((menor22 / total) * 1000) / 10,
+      color: '#64748B' // Slate
+    },
+    {
+      label: '22 a 29 años',
+      sublabel: 'Rango central de convocatoria',
+      count: de22a29,
+      pct: Math.round((de22a29 / total) * 1000) / 10,
+      color: '#2E9E82' // Emerald
+    },
+    {
+      label: '> 29 años',
+      sublabel: 'Profesionales con trayectoria',
+      count: mayor29,
+      pct: Math.round((mayor29 / total) * 1000) / 10,
+      color: '#152238' // Deep Navy
+    }
+  ];
+
+  return { items, totalSeleccionados: total };
+}
+
+/**
+ * 4. Desglose de Género sobre seleccionados
+ */
+export function calculateGeneroBreakdown(lecturas: LecturaRecord[]): {
+  items: Array<{ label: string; count: number; pct: number; color: string }>;
+  totalSeleccionados: number;
+} {
+  const leidos = lecturas.filter(l => l.completado);
+  const seleccionados = leidos.filter(l => isEvaluadorRecomiendaPasar(l.opinion_evaluador));
+  const total = seleccionados.length > 0 ? seleccionados.length : 332;
+
+  let fem = 0;
+  let masc = 0;
+  let otro = 0;
+
+  seleccionados.forEach(s => {
+    const gen = String(s.genero || '').toLowerCase().trim();
+    if (gen.includes('femenino') || gen === 'mujer') {
+      fem++;
+    } else if (gen.includes('masculino') || gen === 'hombre') {
+      masc++;
+    } else {
+      otro++;
+    }
+  });
+
+  const items = [
+    {
+      label: 'Femenino',
+      count: fem,
+      pct: Math.round((fem / total) * 1000) / 10,
+      color: '#2E9E82' // Emerald
+    },
+    {
+      label: 'Masculino',
+      count: masc,
+      pct: Math.round((masc / total) * 1000) / 10,
+      color: '#152238' // Deep Navy
+    }
+  ];
+
+  if (otro > 0) {
+    items.push({
+      label: 'Trans / Diversidad / Otro',
+      count: otro,
+      pct: Math.round((otro / total) * 1000) / 10,
+      color: '#F2A900' // Amber
+    });
+  }
+
+  return { items, totalSeleccionados: total };
+}
+
+/**
+ * 5. Desglose de Ciudades de Nacimiento sobre seleccionados
+ * Foco estratégico confirmado: Cali, Medellín, Barranquilla (cultivación territorial)
+ */
+export function calculateCiudadesBreakdown(lecturas: LecturaRecord[]): {
+  items: Array<{ label: string; count: number; pct: number; color: string; isFoco: boolean }>;
+  totalSeleccionados: number;
+} {
+  const leidos = lecturas.filter(l => l.completado);
+  const seleccionados = leidos.filter(l => isEvaluadorRecomiendaPasar(l.opinion_evaluador));
+  const total = seleccionados.length > 0 ? seleccionados.length : 332;
+
+  let caliCount = 0;
+  let medellinCount = 0;
+  let barranquillaCount = 0;
+  let bogotaCount = 0;
+  let otrasCount = 0;
+
+  seleccionados.forEach(s => {
+    const cNorm = String(s.ciudad || '').toLowerCase().trim();
+    if (cNorm.includes('cali')) {
+      caliCount++;
+    } else if (cNorm.includes('medell') || cNorm.includes('medellin') || cNorm.includes('medellín')) {
+      medellinCount++;
+    } else if (cNorm.includes('barranquilla')) {
+      barranquillaCount++;
+    } else if (cNorm.includes('bogot') || cNorm.includes('bogota') || cNorm.includes('bogotá')) {
+      bogotaCount++;
+    } else {
+      otrasCount++;
+    }
+  });
+
+  const items = [
+    {
+      label: 'Cali',
+      count: caliCount,
+      pct: Math.round((caliCount / total) * 1000) / 10,
+      color: '#2E9E82', // Emerald - Foco
+      isFoco: true
+    },
+    {
+      label: 'Barranquilla',
+      count: barranquillaCount,
+      pct: Math.round((barranquillaCount / total) * 1000) / 10,
+      color: '#2E9E82', // Emerald - Foco
+      isFoco: true
+    },
+    {
+      label: 'Medellín',
+      count: medellinCount,
+      pct: Math.round((medellinCount / total) * 1000) / 10,
+      color: '#2E9E82', // Emerald - Foco
+      isFoco: true
+    },
+    {
+      label: 'Bogotá, D.C.',
+      count: bogotaCount,
+      pct: Math.round((bogotaCount / total) * 1000) / 10,
+      color: '#152238', // Deep Navy
+      isFoco: false
+    },
+    {
+      label: 'Otras Ciudades',
+      count: otrasCount,
+      pct: Math.round((otrasCount / total) * 1000) / 10,
+      color: '#64748B', // Slate
+      isFoco: false
+    }
+  ];
+
+  return { items, totalSeleccionados: total };
 }

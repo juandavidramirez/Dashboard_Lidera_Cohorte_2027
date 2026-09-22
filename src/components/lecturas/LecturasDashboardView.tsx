@@ -3,9 +3,10 @@ import { LecturasHeaderKPIs } from './LecturasHeaderKPIs';
 import { EvaluadoresTable } from './EvaluadoresTable';
 import { CardModeloVsEvaluador } from './CardModeloVsEvaluador';
 import { CardPerfilSeleccionados } from './CardPerfilSeleccionados';
+import { CardsComposicionSeleccionados } from './CardsComposicionSeleccionados';
 import { lecturasDataStore } from '../../lib/lecturasDataStore';
 import { calculateLecturasGeneralKpis, calculateEvaluadoresSummary } from '../../lib/lecturasMetricsCalculator';
-import { RefreshCw, Database, Code, CheckCircle2, AlertCircle, BookOpen, Layers } from 'lucide-react';
+import { RefreshCw, Database, Code, CheckCircle2, AlertCircle, BookOpen, Sparkles, Users } from 'lucide-react';
 
 interface Props {
   totalCumplenMinimosProp?: number;
@@ -137,48 +138,49 @@ export const LecturasDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp
             1. Indicadores Generales de Proceso
           </span>
           <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-            Progreso · Éxito · Atrasos · Alineación IA/Humano
+            Progreso · Éxito sobre Convocatoria · Atrasos · Alineación IA/Humano
           </span>
         </div>
         <LecturasHeaderKPIs kpis={kpis} />
       </section>
 
-      {/* 2. Sección Evaluador — Vista Operativa */}
+      {/* 2. Sección Candidato — Vista de Resultado (PRIMERA SECCIÓN SEGÚN REQUERIMIENTO) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 uppercase tracking-wider bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-[#F2A900]" />
+            2. Sección Candidato — Resultados y Perfil Estratégico
+          </span>
+          <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+            Recomendaciones · Universidades Priorizadas · Composición de Seleccionados
+          </span>
+        </div>
+
+        {/* Sub-bloque 2.1: Modelo vs Evaluador y Perfil Estratégico */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+          <CardModeloVsEvaluador lecturas={lecturas} />
+          <CardPerfilSeleccionados
+            lecturas={lecturas}
+            totalCumplenMinimos={totalCumplenMinimos}
+          />
+        </div>
+
+        {/* Sub-bloque 2.2: 5 Gráficos de Composición de Seleccionados */}
+        <CardsComposicionSeleccionados lecturas={lecturas} />
+      </section>
+
+      {/* 3. Sección Evaluador — Vista Operativa (SEGUNDA SECCIÓN SEGÚN REQUERIMIENTO) */}
       <section className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 uppercase tracking-wider bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-[#152238]" />
-            2. Sección Evaluador — Seguimiento Operativo
+            3. Sección Evaluador — Seguimiento Operativo
           </span>
           <span className="text-xs text-slate-400 font-medium hidden sm:inline">
             13 Evaluadores con Criterio de Semáforo Confirmado
           </span>
         </div>
         <EvaluadoresTable evaluadores={evaluadores} />
-      </section>
-
-      {/* 3. Sección Candidato — Vista de Resultado */}
-      <section className="space-y-2.5">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 uppercase tracking-wider bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#F2A900]" />
-            3. Sección Candidato — Resultados y Perfil Estratégico
-          </span>
-          <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-            Recomendaciones · Universidades Priorizadas · Bilingüismo (B2+)
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-          {/* Card 2.1: Modelo vs Evaluador */}
-          <CardModeloVsEvaluador lecturas={lecturas} />
-
-          {/* Card 2.2: Perfil de Seleccionados */}
-          <CardPerfilSeleccionados
-            lecturas={lecturas}
-            totalCumplenMinimos={totalCumplenMinimos}
-          />
-        </div>
       </section>
 
       {/* Modal de Script SQL para Supabase */}
@@ -212,6 +214,8 @@ CREATE TABLE IF NOT EXISTS public.lecturas_progreso (
   completado BOOLEAN NOT NULL DEFAULT false,
   opinion_evaluador TEXT,
   recomendacion_modelo TEXT,
+  genero TEXT,
+  ciudad TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
@@ -235,8 +239,14 @@ SELECT
   lp.completado,
   lp.opinion_evaluador,
   lp.recomendacion_modelo,
+  lp.genero,
+  lp.ciudad,
   cc.uni_prioritaria,
   cc.is_bilingual,
+  cc.is_stem,
+  cc.enfoque,
+  cc.tipo_pregrado,
+  cc.edad,
   cc.eligibility,
   cc.full_name,
   cc.university_normalized,
@@ -258,7 +268,7 @@ GRANT SELECT ON public.lecturas_con_perfil TO anon, authenticated, service_role;
               </button>
               <button
                 onClick={() => setShowSqlModal(false)}
-                className="px-4 py-2 bg-[#152238] text-white hover:bg-slate-800 rounded-lg text-xs font-bold transition-colors"
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors rounded-lg text-xs font-bold"
               >
                 Cerrar
               </button>

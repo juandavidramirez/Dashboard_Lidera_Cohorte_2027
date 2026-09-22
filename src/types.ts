@@ -178,9 +178,16 @@ export interface LecturaRecord {
   completado: boolean;
   opinion_evaluador?: string | null;
   recomendacion_modelo?: string | null;
+  // Campos propios de lecturas_progreso
+  genero?: string | null;
+  ciudad?: string | null; // Ciudad de nacimiento (Ciudad_de_nacimiento__c)
   // Campos cruzados desde candidates_convocatoria
   uni_prioritaria?: string | null;
   is_bilingual?: boolean | null;
+  is_stem?: boolean | null;
+  enfoque?: string | null; // 'STEM y Bilingüe' | 'STEM' | 'Bilingüe' | 'No STEM no Bilingüe'
+  tipo_pregrado?: string | null; // 'Profesional' | 'Licenciatura' | 'Carrera no plazable'
+  edad?: number | string | null;
   eligibility?: string | null;
   full_name?: string | null;
   university_normalized?: string | null;
@@ -198,13 +205,27 @@ export interface EvaluadorSummary {
   estado: EvaluadorStatus;
 }
 
-export type PerfilFilterType = 'uni_prioritaria' | 'is_bilingual' | 'or' | 'and';
+export type PerfilFilterType = 
+  | 'uni_prioritaria'
+  | 'bilingue'
+  | 'stem'
+  | 'stem_or_bilingue'
+  | 'stem_and_bilingue';
 
 export interface CategoryBreakdownItem {
   label: string;
   count: number;
   pct: number;
   isPass: boolean;
+}
+
+export interface CompositionBreakdownItem {
+  key: string;
+  label: string;
+  count: number;
+  pctSobreSeleccionados: number;
+  color?: string;
+  sublabel?: string;
 }
 
 export interface LecturasGeneralKpis {

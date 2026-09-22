@@ -83,6 +83,12 @@ function generateSeedLecturas(): LecturaRecord[] {
         ? Boolean(linkedCand.isBilingual)
         : (counter % 2 === 0);
 
+      const mockGenero = counter % 3 === 0 ? 'Masculino' : 'Femenino';
+      const mockCiudad = counter % 5 === 0 ? 'Cali' : counter % 5 === 1 ? 'Medellín' : counter % 5 === 2 ? 'Barranquilla' : counter % 5 === 3 ? 'Bogotá, D.C.' : 'Otras';
+      const mockEnfoque = linkedCand?.enfoque || (counter % 3 === 0 ? 'STEM y Bilingüe' : counter % 3 === 1 ? 'STEM' : 'Bilingüe');
+      const mockTipo = linkedCand?.tipoPregrado || (counter % 4 === 0 ? 'Licenciatura' : 'Profesional');
+      const mockEdad = linkedCand && typeof linkedCand.edad === 'number' ? linkedCand.edad : (22 + (counter % 12));
+
       records.push({
         primera_lectura_id: `a0FQU00000${String(counter).padStart(5, '0')}2AF`,
         id_contacto: linkedCand ? linkedCand.id : `003QU00001${String(counter).padStart(6, '0')}`,
@@ -90,6 +96,12 @@ function generateSeedLecturas(): LecturaRecord[] {
         completado: isCompletado,
         opinion_evaluador: opinion,
         recomendacion_modelo: modeloRec,
+        genero: mockGenero,
+        ciudad: mockCiudad,
+        enfoque: mockEnfoque,
+        tipo_pregrado: mockTipo,
+        edad: mockEdad,
+        is_stem: mockEnfoque.includes('STEM'),
         uni_prioritaria: isPrio ? 'SI' : 'NO',
         is_bilingual: isBiling,
         eligibility: 'Cumple mínimos',
@@ -265,7 +277,7 @@ class LecturasDataStore {
       while (candPage < 4) { // hasta 4.000 candidatos
         const { data: cData, error: cErr } = await supabase
           .from('candidates_convocatoria')
-          .select('id, id_primera_revision, full_name, eligibility, uni_prioritaria, is_bilingual, university_normalized, career, form_completo')
+          .select('id, id_primera_revision, full_name, eligibility, uni_prioritaria, is_bilingual, university_normalized, career, form_completo, enfoque, tipo_pregrado, edad, is_stem')
           .range(candPage * pageSize, (candPage + 1) * pageSize - 1);
 
         if (cErr || !cData || cData.length === 0) break;
@@ -317,6 +329,23 @@ class LecturasDataStore {
           ? Boolean(cand.is_bilingual || cand.isBilingual)
           : false;
 
+        const isStem = cand 
+          ? Boolean(cand.is_stem !== undefined ? cand.is_stem : cand.isStem)
+          : false;
+
+        const enfoqueVal = cand?.enfoque || (
+          isStem && isBilingual ? 'STEM y Bilingüe' : isStem ? 'STEM' : isBilingual ? 'Bilingüe' : 'No STEM no Bilingüe'
+        );
+
+        const tipoPregrado = cand?.tipo_pregrado || cand?.tipoPregrado || 'Profesional';
+
+        let edadVal: number | null = null;
+        if (cand && typeof cand.edad === 'number' && !isNaN(cand.edad)) {
+          edadVal = cand.edad;
+        } else if (cand && typeof cand.edad === 'string' && !isNaN(Number(cand.edad))) {
+          edadVal = Number(cand.edad);
+        }
+
         const fullName = cand 
           ? (cand.full_name || cand.fullName || '')
           : '';
@@ -329,6 +358,9 @@ class LecturasDataStore {
           ? (cand.career || '')
           : '';
 
+        const generoClean = row.genero ? String(row.genero).trim() : null;
+        const ciudadClean = row.ciudad ? String(row.ciudad).trim() : null;
+
         return {
           primera_lectura_id: row.primera_lectura_id || row.id,
           id_contacto: row.id_contacto,
@@ -336,8 +368,14 @@ class LecturasDataStore {
           completado: isCompletado,
           opinion_evaluador: opinionClean || null,
           recomendacion_modelo: modeloClean || null,
+          genero: generoClean,
+          ciudad: ciudadClean,
           uni_prioritaria: uniPrioritaria,
           is_bilingual: isBilingual,
+          is_stem: isStem,
+          enfoque: enfoqueVal,
+          tipo_pregrado: tipoPregrado,
+          edad: edadVal,
           eligibility: cand?.eligibility || 'Cumple mínimos',
           full_name: fullName,
           university_normalized: uniNormalized,
