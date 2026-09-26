@@ -300,17 +300,13 @@ class DataStore {
       if (allRemoteData.length > 0) {
         const remoteCandidates = allRemoteData.map(rowToCandidate);
         
-        // Anti-regression safeguard: Ensure total count never drops unexpectedly due to partial remote sync
         if (remoteCandidates.length < this.candidates.length) {
-          console.warn(`[Safeguard Alert] Remote candidate count (${remoteCandidates.length}) is lower than local count (${this.candidates.length}). Merging records to prevent data regression.`);
-          const existingMap = new Map(this.candidates.map(c => [c.id, c]));
-          remoteCandidates.forEach(rc => {
-            existingMap.set(rc.id, rc);
-          });
-          this.candidates = Array.from(existingMap.values());
-        } else {
-          this.candidates = remoteCandidates;
+          console.info(`[Sync Info] Remote candidate count (${remoteCandidates.length}) is lower than local count (${this.candidates.length}). Updating local state to reflect remote cleanup/sync.`);
         }
+        
+        this.candidates = remoteCandidates;
+      } else if (this.candidates.length > 0) {
+        console.warn(`[Safeguard Alert] Remote returned 0 records while local had ${this.candidates.length}. Preserving local data against empty remote response.`);
       }
 
       // 2. Fetch Goals

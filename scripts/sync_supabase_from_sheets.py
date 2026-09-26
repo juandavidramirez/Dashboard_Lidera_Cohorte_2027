@@ -120,6 +120,48 @@ def sync():
             else:
                 print(f"  ⚠️ Lote {i//batch_size + 1} respuesta: {response.status}")
 
+    # Limpieza de huérfanos (Registros en Supabase que ya no están en Google Sheets)
+    print("🧹 Verificando registros huérfanos en Supabase con limpieza (id=neq.0)...")
+    try:
+        # Fetch all IDs currently in Supabase
+        sb_ids = set()
+        start = 0
+        step = 1000
+        while True:
+            req_sb = urllib.request.Request(
+                f"{SUPABASE_URL}/rest/v1/candidates_convocatoria?select=id&limit={step}&offset={start}",
+                headers={'apikey': SUPABASE_KEY, 'Authorization': f'Bearer {SUPABASE_KEY}'}
+            )
+            with urllib.request.urlopen(req_sb) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                if not data: break
+                for row in data:
+                    if row.get('id'):
+                        sb_ids.add(str(row.get('id')).strip())
+                if len(data) < step: break
+                start += step
+        
+        orphan_ids = sb_ids - sheet_ids
+        if orphan_ids:
+            print(f"  🗑️ Encontrados {len(orphan_ids)} registros huérfanos para eliminar de Supabase.")
+            for oid in orphan_ids:
+                req_del = urllib.request.Request(
+                    f"{SUPABASE_URL}/rest/v1/candidates_convocatoria?id=eq.{oid}",
+                    headers={
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': f'Bearer {SUPABASE_KEY}',
+                        'Content-Type': 'application/json'
+                    },
+                    method='DELETE'
+                )
+                with urllib.request.urlopen(req_del) as del_resp:
+                    if del_resp.status in [200, 204]:
+                        print(f"    - Eliminado huérfano ID: {oid}")
+        else:
+            print("  ✨ No hay registros huérfanos en Supabase.")
+    except Exception as e:
+        print(f"  ⚠️ Advertencia en limpieza de huérfanos: {e}")
+
     print("🎉 Sincronización finalizada exitosamente.")
 
 if __name__ == "__main__":
