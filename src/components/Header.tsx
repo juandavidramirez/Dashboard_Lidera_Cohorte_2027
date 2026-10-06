@@ -19,6 +19,7 @@ import { ActiveTab } from './Sidebar';
 interface Props {
   onSyncSheets: () => void;
   onSyncLecturas?: () => void;
+  onSyncEntrevistas?: () => void;
   onSyncAll?: () => void;
   onResetData: () => void;
   isSyncing: boolean;
@@ -30,6 +31,7 @@ interface Props {
 export const Header: React.FC<Props> = ({
   onSyncSheets,
   onSyncLecturas,
+  onSyncEntrevistas,
   onSyncAll,
   onResetData,
   isSyncing,
@@ -263,12 +265,59 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* 3. Dashboard General (Embudo Completo) */}
+                  {/* 3. Dashboard de Entrevistas */}
                   <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200">
-                          <Network className="w-4 h-4 text-purple-700" />
+                        <div className="p-1.5 rounded-lg bg-emerald-50 text-[#2E9E82] border border-emerald-200">
+                          <CheckCircle2 className="w-4 h-4 text-[#2E9E82]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900">
+                              Dashboard de Entrevistas
+                            </span>
+                            {activeTab === 'entrevistas_progress' && (
+                              <span className="text-[9px] bg-emerald-100 text-emerald-900 font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
+                                Activo
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-500 block">
+                            Fuente: Supabase (entrevistas_con_perfil)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                      <button
+                        onClick={() => handleNavigate('entrevistas_progress')}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-950 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Ver sección
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (onSyncEntrevistas) onSyncEntrevistas();
+                          setIsDropdownOpen(false);
+                        }}
+                        disabled={isSyncing}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#152238] text-white hover:bg-slate-800 px-2.5 py-1 rounded-md transition-colors shadow-2xs disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                        Actualizar datos
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4. Dashboard General (Embudo Completo) */}
+                  <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
+                          <Network className="w-4 h-4 text-slate-600" />
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">

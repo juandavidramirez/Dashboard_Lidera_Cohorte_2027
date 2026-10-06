@@ -9,7 +9,8 @@ import {
   LineChart,
   BookOpen,
   Network,
-  ChevronDown
+  ChevronDown,
+  UserCheck
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -20,7 +21,8 @@ export type ActiveTab =
   | 'auxiliary_charts'
   | 'universities'
   | 'goals'
-  | 'lecturas_progress';
+  | 'lecturas_progress'
+  | 'entrevistas_progress';
 
 interface Props {
   activeTab: ActiveTab;
@@ -29,6 +31,8 @@ interface Props {
   incompleteCandidateCount?: number;
   eligibleCount: number;
   lecturasCompletadasCount?: number;
+  entrevistasCompletadasCount?: number;
+  entrevistasTotalCount?: number;
 }
 
 export const Sidebar: React.FC<Props> = ({
@@ -36,13 +40,16 @@ export const Sidebar: React.FC<Props> = ({
   setActiveTab,
   candidateCount,
   incompleteCandidateCount = 0,
-  lecturasCompletadasCount = 612
+  lecturasCompletadasCount = 612,
+  entrevistasCompletadasCount = 31,
+  entrevistasTotalCount = 180
 }) => {
-  // Estado desplegable para los 3 dashboards principales
+  // Estado desplegable para los 4 dashboards principales
   const [openSections, setOpenSections] = useState<{
     general: boolean;
     convocatoria: boolean;
     lecturas: boolean;
+    entrevistas: boolean;
   }>({
     general: activeTab === 'general_funnel',
     convocatoria: [
@@ -53,7 +60,8 @@ export const Sidebar: React.FC<Props> = ({
       'universities',
       'goals'
     ].includes(activeTab),
-    lecturas: activeTab === 'lecturas_progress'
+    lecturas: activeTab === 'lecturas_progress',
+    entrevistas: activeTab === 'entrevistas_progress'
   });
 
   // Asegura que al cambiar de pestaña externamente se abra la sección correspondiente
@@ -62,12 +70,14 @@ export const Sidebar: React.FC<Props> = ({
       setOpenSections(prev => ({ ...prev, general: true }));
     } else if (activeTab === 'lecturas_progress') {
       setOpenSections(prev => ({ ...prev, lecturas: true }));
+    } else if (activeTab === 'entrevistas_progress') {
+      setOpenSections(prev => ({ ...prev, entrevistas: true }));
     } else {
       setOpenSections(prev => ({ ...prev, convocatoria: true }));
     }
   }, [activeTab]);
 
-  const toggleSection = (section: 'general' | 'convocatoria' | 'lecturas') => {
+  const toggleSection = (section: 'general' | 'convocatoria' | 'lecturas' | 'entrevistas') => {
     setOpenSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -131,6 +141,16 @@ export const Sidebar: React.FC<Props> = ({
       label: 'Progreso y Evaluación de Lecturas',
       icon: BookOpen,
       badge: `${lecturasCompletadasCount} / 978`
+    }
+  ];
+
+  // Grupo 4: Dashboard de Proceso de Entrevistas
+  const entrevistasNavItems = [
+    {
+      id: 'entrevistas_progress',
+      label: 'Progreso y Evaluación de Entrevistas',
+      icon: UserCheck,
+      badge: `${entrevistasCompletadasCount} / ${entrevistasTotalCount}`
     }
   ];
 
@@ -309,6 +329,62 @@ export const Sidebar: React.FC<Props> = ({
                       <span
                         className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold shrink-0 ${
                           isActive ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* GRUPO 4: DASHBOARD DE ENTREVISTAS (Desplegable) */}
+        <div className="rounded-lg bg-slate-900/40 border border-slate-800/80 overflow-hidden">
+          <button
+            onClick={() => toggleSection('entrevistas')}
+            className="w-full flex items-center justify-between p-2.5 text-left hover:bg-slate-800/60 transition-colors group"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
+                4. Dashboard Entrevistas
+              </span>
+              <span className="text-[9px] bg-[#2E9E82]/20 text-[#2E9E82] px-1.5 py-0.2 rounded font-bold border border-[#2E9E82]/30">
+                Nuevo
+              </span>
+            </div>
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-hover:text-slate-200 ${
+                openSections.entrevistas ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {openSections.entrevistas && (
+            <div className="p-1.5 space-y-1 border-t border-slate-800/70 bg-slate-950/20">
+              {entrevistasNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as ActiveTab)}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                      isActive
+                        ? 'bg-white/10 text-white shadow-xs border-l-2 border-[#2E9E82]'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#2E9E82]' : 'text-slate-400'}`} />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold shrink-0 ${
+                          isActive ? 'bg-[#2E9E82] text-white' : 'bg-slate-800 text-slate-400'
                         }`}
                       >
                         {item.badge}

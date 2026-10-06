@@ -29,18 +29,20 @@ import { GoalSettings } from './components/GoalSettings';
 import { AuxiliaryIndicatorsModule } from './components/AuxiliaryIndicatorsModule';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { LecturasDashboardView } from './components/lecturas/LecturasDashboardView';
+import { EntrevistasDashboardView } from './components/entrevistas/EntrevistasDashboardView';
 import { GeneralFunnelPlaceholder } from './components/GeneralFunnelPlaceholder';
 import { SectionLevelHeader } from './components/common/SectionLevelHeader';
 import { DashboardViewHeader } from './components/common/DashboardViewHeader';
 import { lecturasDataStore } from './lib/lecturasDataStore';
+import { entrevistasDataStore } from './lib/entrevistasDataStore';
 
 export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [goals, setGoals] = useState<GoalTarget[]>([]);
   const [universities, setUniversities] = useState<UniversityMapping[]>([]);
 
-  // Vista de entrada por defecto: Dashboard de Lecturas (foco activo)
-  const [activeTab, setActiveTab] = useState<ActiveTab>('lecturas_progress');
+  // Vista de entrada por defecto: Dashboard de Entrevistas (foco activo)
+  const [activeTab, setActiveTab] = useState<ActiveTab>('entrevistas_progress');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -48,12 +50,26 @@ export default function App() {
   const [lecturasCompletadas, setLecturasCompletadas] = useState(() => {
     return lecturasDataStore.getLecturas().filter(l => l.completado).length;
   });
+  const [entrevistasCompletadas, setEntrevistasCompletadas] = useState(() => {
+    return entrevistasDataStore.getEntrevistas().filter(e => e.completado).length;
+  });
+  const [entrevistasTotal, setEntrevistasTotal] = useState(() => {
+    return entrevistasDataStore.getEntrevistas().length || 180;
+  });
 
   useEffect(() => {
-    const unsub = lecturasDataStore.subscribe(() => {
+    const unsubLec = lecturasDataStore.subscribe(() => {
       setLecturasCompletadas(lecturasDataStore.getLecturas().filter(l => l.completado).length);
     });
-    return () => unsub();
+    const unsubEnt = entrevistasDataStore.subscribe(() => {
+      const records = entrevistasDataStore.getEntrevistas();
+      setEntrevistasCompletadas(records.filter(e => e.completado).length);
+      setEntrevistasTotal(records.length || 180);
+    });
+    return () => {
+      unsubLec();
+      unsubEnt();
+    };
   }, []);
 
   // Subscribe to dataStore updates and fetch 2025 comparison data
@@ -170,17 +186,33 @@ export default function App() {
     }
   };
 
+  const handleSyncEntrevistas = async () => {
+    setIsSyncing(true);
+    const success = await entrevistasDataStore.loadFromSupabase();
+    setIsSyncing(false);
+    if (success) {
+      addToast(
+        'success',
+        'Entrevistas Sincronizadas',
+        'Se actualizaron los registros del proceso de entrevistas desde Supabase.'
+      );
+    } else {
+      addToast('info', 'Entrevistas Actualizadas', 'Se han refrescado los registros de entrevistas.');
+    }
+  };
+
   const handleSyncAll = async () => {
     setIsSyncing(true);
     await Promise.all([
       dataStore.loadFromSupabase(),
-      lecturasDataStore.loadFromSupabase()
+      lecturasDataStore.loadFromSupabase(),
+      entrevistasDataStore.loadFromSupabase()
     ]);
     setIsSyncing(false);
     addToast(
       'success',
       'Sincronización Completa',
-      'Todas las fuentes (Convocatoria y Lecturas) han sido actualizadas.'
+      'Todas las fuentes (Convocatoria, Lecturas y Entrevistas) han sido actualizadas.'
     );
   };
 
@@ -216,6 +248,7 @@ export default function App() {
       <Header
         onSyncSheets={handleSyncSheets}
         onSyncLecturas={handleSyncLecturas}
+        onSyncEntrevistas={handleSyncEntrevistas}
         onSyncAll={handleSyncAll}
         onResetData={handleResetData}
         isSyncing={isSyncing}
@@ -233,6 +266,8 @@ export default function App() {
           incompleteCandidateCount={incompleteCandidates.length}
           eligibleCount={eligibleCount}
           lecturasCompletadasCount={lecturasCompletadas}
+          entrevistasCompletadasCount={entrevistasCompletadas}
+          entrevistasTotalCount={entrevistasTotal}
         />
 
         {/* Main Dashboard Content */}
@@ -243,6 +278,10 @@ export default function App() {
 
           {activeTab === 'lecturas_progress' && (
             <LecturasDashboardView totalCumplenMinimosProp={eligibleCount} />
+          )}
+
+          {activeTab === 'entrevistas_progress' && (
+            <EntrevistasDashboardView totalCumplenMinimosProp={eligibleCount} />
           )}
 
           {activeTab === 'overview' && (

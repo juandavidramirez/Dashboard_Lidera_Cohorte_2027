@@ -219,6 +219,15 @@ export interface CategoryBreakdownItem {
   isPass: boolean;
 }
 
+export interface CityLeaderboardItem {
+  rank: number;
+  label: string;
+  count: number;
+  pct: number;
+  magnitudePct: number;
+  isFoco: boolean;
+}
+
 export interface CompositionBreakdownItem {
   key: string;
   label: string;
@@ -242,4 +251,105 @@ export interface LecturasGeneralKpis {
   evaluadorPasaPct: number;
   evaluadorPasaCount: number;
   totalLeidos: number;
+}
+
+// ==========================================
+// TIPOS PARA PROCESO DE ENTREVISTAS (COHORTE 2027)
+// ==========================================
+
+export interface EntrevistaRecord {
+  id_dia_entrevista: string;
+  id_contacto: string;
+  evaluador: string;
+  es_staff: boolean;
+  completado: boolean;
+  fecha_entrevista?: string | null;
+  opinion_evaluador?: string | null;
+  recomendacion_postulante?: string | null;
+  puntaje_academico_universidad?: number | null;
+  coeficiente_universidad?: number | null;
+  bandera_pregrado?: number | null;
+  puntaje_icfes?: number | null;
+  puntaje_logros?: number | null;
+  disponibilidad_instituto?: string | null;
+  preferencia_region?: string | null;
+  preferencia_zona?: string | null;
+  preferencia_nivel?: string | null;
+  capacidad_ensenar_ingles?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+
+  // Campos cruzados desde candidates_convocatoria
+  uni_prioritaria?: string | null;
+  is_bilingual?: boolean | null;
+  is_stem?: boolean | null;
+  enfoque?: string | null; // 'STEM y Bilingüe' | 'STEM' | 'Bilingüe' | 'No STEM no Bilingüe'
+  tipo_pregrado?: string | null; // 'Profesional' | 'Licenciatura' | 'Carrera no plazable'
+  edad?: number | string | null;
+  eligibility?: string | null;
+  full_name?: string | null;
+  university_normalized?: string | null;
+  career?: string | null;
+  form_completo?: string | null;
+
+  // Campos cruzados desde lecturas_progreso
+  genero?: string | null;
+  ciudad?: string | null; // Ciudad de nacimiento
+}
+
+export interface EntrevistadorSummary {
+  evaluador: string;
+  esStaff: boolean;
+  asignados: number;
+  completados: number;
+  avancePct: number;
+  estado: EvaluadorStatus;
+}
+
+export interface CombinablePerfilFilterState {
+  uniPriorizada: boolean;
+  bilingue: boolean;
+  stem: boolean;
+  stemOrBilingue: boolean;
+  menores30: boolean;
+}
+
+export interface TopCandidatosFilterState {
+  menores30: boolean;
+  menores30Bilingue: boolean;
+  menores30Stem: boolean;
+  universidadPriorizada: boolean;
+  universidadNoPriorizada: boolean;
+}
+
+export interface EntrevistasGeneralKpis {
+  completadasCount: number;
+  metaGlobal: number;
+  totalAsignados: number;
+  totalPasaronEntrevista: number;
+  avanceGlobalPct: number;
+  aceptadosCount: number;
+  rechazadosCount: number;
+  totalEvaluados: number;
+  tasaExitoPct: number;
+  evaluadoresAtrasadosCount: number;
+  evaluadoresAtrasadosStaffCount: number;
+  evaluadoresAtrasadosExternosCount: number;
+  totalEvaluadores: number;
+  totalStaffEvaluadores: number;
+  totalExternosEvaluadores: number;
+  topCandidatosCount: number;
+  topCandidatosPct: number;
+  topCandidatosFilteredCount: number;
+  topCandidatosFilteredPct: number;
+}
+
+export interface EntrevistasResultadosBreakdown {
+  totalEvaluados: number;
+  aceptadosCount: number;
+  aceptadosPct: number;
+  rechazadosCount: number;
+  rechazadosPct: number;
+  aceptadosCategories: CategoryBreakdownItem[];
+  rechazadosCategories: CategoryBreakdownItem[];
 }
