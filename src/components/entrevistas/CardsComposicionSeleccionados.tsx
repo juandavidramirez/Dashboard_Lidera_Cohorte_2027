@@ -121,7 +121,7 @@ export const CardsComposicionSeleccionados: React.FC<Props> = ({ entrevistas }) 
             </div>
           </div>
 
-          <div className="p-3.5 space-y-3 flex-1 flex flex-col justify-center">
+          <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-center">
             {edades.items.map((item) => (
               <div key={item.label} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">

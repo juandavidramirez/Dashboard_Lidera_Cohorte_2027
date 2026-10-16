@@ -740,7 +740,7 @@ export function calculateEnfoqueBreakdown(entrevistas: EntrevistaRecord[]): {
 }
 
 /**
- * 3. Desglose de Rangos de Edad (<22, 22 a 29, >29) sobre Aceptados
+ * 3. Desglose de Rangos de Edad (Menos de 24, 25 - 26, 27-28, Más de 29) sobre Aceptados
  */
 export function calculateEdadesBreakdown(entrevistas: EntrevistaRecord[]): {
   items: Array<{ label: string; count: number; pct: number; color: string; sublabel: string }>;
@@ -750,41 +750,50 @@ export function calculateEdadesBreakdown(entrevistas: EntrevistaRecord[]): {
   const seleccionados = completadas.filter(e => isEntrevistaAceptado(e.opinion_evaluador));
   const total = seleccionados.length > 0 ? seleccionados.length : 1;
 
-  let menor22 = 0;
-  let de22a29 = 0;
-  let mayor29 = 0;
+  let menosDe24 = 0;
+  let de25a26 = 0;
+  let de27a28 = 0;
+  let masDe29 = 0;
 
   seleccionados.forEach(s => {
     const edad = typeof s.edad === 'number' ? s.edad : Number(s.edad);
     if (!isNaN(edad) && edad > 0) {
-      if (edad < 22) menor22++;
-      else if (edad <= 29) de22a29++;
-      else mayor29++;
+      if (edad <= 24) menosDe24++;
+      else if (edad <= 26) de25a26++;
+      else if (edad <= 28) de27a28++;
+      else masDe29++;
     } else {
-      de22a29++;
+      de25a26++;
     }
   });
 
   const items = [
     {
-      label: '< 22 años',
+      label: 'Menos de 24',
       sublabel: 'Jóvenes / Recién egresados',
-      count: menor22,
-      pct: Math.round((menor22 / total) * 1000) / 10,
-      color: '#64748B'
+      count: menosDe24,
+      pct: Math.round((menosDe24 / total) * 1000) / 10,
+      color: '#64748B' // Slate
     },
     {
-      label: '22 a 29 años',
-      sublabel: 'Rango central de convocatoria',
-      count: de22a29,
-      pct: Math.round((de22a29 / total) * 1000) / 10,
+      label: '25 - 26',
+      sublabel: 'Rango temprano',
+      count: de25a26,
+      pct: Math.round((de25a26 / total) * 1000) / 10,
       color: '#2E9E82' // Emerald
     },
     {
-      label: '> 29 años',
+      label: '27-28',
+      sublabel: 'Rango intermedio',
+      count: de27a28,
+      pct: Math.round((de27a28 / total) * 1000) / 10,
+      color: '#F2A900' // Amber
+    },
+    {
+      label: 'Más de 29',
       sublabel: 'Profesionales con trayectoria',
-      count: mayor29,
-      pct: Math.round((mayor29 / total) * 1000) / 10,
+      count: masDe29,
+      pct: Math.round((masDe29 / total) * 1000) / 10,
       color: '#152238' // Navy
     }
   ];
