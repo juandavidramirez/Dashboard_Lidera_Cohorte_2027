@@ -30,6 +30,7 @@ import { AuxiliaryIndicatorsModule } from './components/AuxiliaryIndicatorsModul
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { LecturasDashboardView } from './components/lecturas/LecturasDashboardView';
 import { EntrevistasDashboardView } from './components/entrevistas/EntrevistasDashboardView';
+import { LabDashboardView } from './components/lab/LabDashboardView';
 import { GeneralFunnelPlaceholder } from './components/GeneralFunnelPlaceholder';
 import { SectionLevelHeader } from './components/common/SectionLevelHeader';
 import { DashboardViewHeader } from './components/common/DashboardViewHeader';
@@ -282,6 +283,10 @@ export default function App() {
 
           {activeTab === 'entrevistas_progress' && (
             <EntrevistasDashboardView totalCumplenMinimosProp={eligibleCount} />
+          )}
+
+          {activeTab === 'lab_progress' && (
+            <LabDashboardView totalCumplenMinimosProp={eligibleCount} />
           )}
 
           {activeTab === 'overview' && (
