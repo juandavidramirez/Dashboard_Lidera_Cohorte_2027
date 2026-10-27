@@ -302,11 +302,62 @@ export const FichaCandidatoPanel: React.FC<Props> = ({ candidate, isOpen, onClos
               </button>
 
               {accordionOpen.entrevista && (
-                <div className="p-4 bg-white text-xs text-slate-600 space-y-2">
-                  <p>
-                    <strong>Observaciones generales:</strong> {candidate.comentarios_entrevista || 'Candidato con gran motivación vocacional y resiliencia demostrada.'}
-                  </p>
-                  <p className="text-[11px] text-slate-400">
+                <div className="p-4 bg-white text-xs text-slate-600 space-y-3">
+                  {candidate.comentarios_entrevista && (
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <strong className="block text-slate-800 mb-0.5">Observaciones Generales:</strong>
+                      <p>{candidate.comentarios_entrevista}</p>
+                    </div>
+                  )}
+
+                  {/* Comentarios detallados por competencia de Entrevista */}
+                  {candidate.comentario_logros && (
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <strong className="block text-slate-800 mb-0.5">Logros:</strong>
+                      <p className="whitespace-pre-line">{candidate.comentario_logros}</p>
+                    </div>
+                  )}
+
+                  {candidate.comentario_perseverancia && (
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <strong className="block text-slate-800 mb-0.5">Perseverancia:</strong>
+                      <p className="whitespace-pre-line">{candidate.comentario_perseverancia}</p>
+                    </div>
+                  )}
+
+                  {candidate.comentario_compromiso && (
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <strong className="block text-slate-800 mb-0.5">Permanencia y Compromiso:</strong>
+                      <p className="whitespace-pre-line">{candidate.comentario_compromiso}</p>
+                    </div>
+                  )}
+
+                  {candidate.comentario_relaciones && (
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <strong className="block text-slate-800 mb-0.5">Construcción de Relaciones:</strong>
+                      <p className="whitespace-pre-line">{candidate.comentario_relaciones}</p>
+                    </div>
+                  )}
+
+                  {candidate.comentario_ajuste && (
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <strong className="block text-slate-800 mb-0.5">Ajuste a la Organización:</strong>
+                      <p className="whitespace-pre-line">{candidate.comentario_ajuste}</p>
+                    </div>
+                  )}
+
+                  {candidate.comentario_ingles && (
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <strong className="block text-slate-800 mb-0.5">Capacidad Enseñar Inglés:</strong>
+                      <p>{candidate.comentario_ingles}</p>
+                    </div>
+                  )}
+
+                  {!candidate.comentarios_entrevista && !candidate.comentario_logros && !candidate.comentario_ajuste && (
+                    <p className="text-slate-500 italic">Sin comentarios registrados para la entrevista individual.</p>
+                  )}
+
+                  <p className="text-[11px] text-slate-400 pt-1">
                     Evaluador de entrevista: {candidate.evaluador_entrevista || 'Staff LIDERA'}
                   </p>
                 </div>

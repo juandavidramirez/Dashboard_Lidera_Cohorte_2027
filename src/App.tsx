@@ -36,14 +36,15 @@ import { SectionLevelHeader } from './components/common/SectionLevelHeader';
 import { DashboardViewHeader } from './components/common/DashboardViewHeader';
 import { lecturasDataStore } from './lib/lecturasDataStore';
 import { entrevistasDataStore } from './lib/entrevistasDataStore';
+import { labDataStore } from './lib/labDataStore';
 
 export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [goals, setGoals] = useState<GoalTarget[]>([]);
   const [universities, setUniversities] = useState<UniversityMapping[]>([]);
 
-  // Vista de entrada por defecto: Dashboard de Entrevistas (foco activo)
-  const [activeTab, setActiveTab] = useState<ActiveTab>('entrevistas_progress');
+  // Vista de entrada por defecto: Dashboard de LIDERA Lab
+  const [activeTab, setActiveTab] = useState<ActiveTab>('lab_progress');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -202,18 +203,34 @@ export default function App() {
     }
   };
 
+  const handleSyncLab = async () => {
+    setIsSyncing(true);
+    const success = await labDataStore.loadFromSupabase();
+    setIsSyncing(false);
+    if (success) {
+      addToast(
+        'success',
+        'LIDERA Lab Sincronizado',
+        'Se actualizaron los registros del proceso LIDERA Lab directamente desde Supabase.'
+      );
+    } else {
+      addToast('info', 'LIDERA Lab Actualizado', 'Se han refrescado los registros de LIDERA Lab.');
+    }
+  };
+
   const handleSyncAll = async () => {
     setIsSyncing(true);
     await Promise.all([
       dataStore.loadFromSupabase(),
       lecturasDataStore.loadFromSupabase(),
-      entrevistasDataStore.loadFromSupabase()
+      entrevistasDataStore.loadFromSupabase(),
+      labDataStore.loadFromSupabase()
     ]);
     setIsSyncing(false);
     addToast(
       'success',
       'Sincronización Completa',
-      'Todas las fuentes (Convocatoria, Lecturas y Entrevistas) han sido actualizadas.'
+      'Todas las fuentes (Convocatoria, Lecturas, Entrevistas y LIDERA Lab) han sido actualizadas.'
     );
   };
 
@@ -250,6 +267,7 @@ export default function App() {
         onSyncSheets={handleSyncSheets}
         onSyncLecturas={handleSyncLecturas}
         onSyncEntrevistas={handleSyncEntrevistas}
+        onSyncLab={handleSyncLab}
         onSyncAll={handleSyncAll}
         onResetData={handleResetData}
         isSyncing={isSyncing}

@@ -15,7 +15,6 @@ import { CardPerfilSeleccionadosLab } from './CardPerfilSeleccionadosLab';
 import { CardsComposicionSeleccionadosLab } from './CardsComposicionSeleccionadosLab';
 import { DirectorioCandidatos } from './DirectorioCandidatos';
 import { FichaCandidatoPanel } from './FichaCandidatoPanel';
-import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   totalCumplenMinimosProp?: number;
@@ -127,19 +126,6 @@ export const LabDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp }) =
 
   return (
     <div className="space-y-8">
-      {/* FRANJA VISIBLE DE DATOS DE EJEMPLO */}
-      <div className="bg-amber-50 border border-amber-300/80 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 text-amber-950 shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span className="text-xs font-bold">
-            Datos de ejemplo — no son candidatos reales (~140 registros simulados para validación de interfaz)
-          </span>
-        </div>
-        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded">
-          Etapa 1 (Prototipo UI)
-        </span>
-      </div>
-
       {/* 1. Header con tema corporativo limpio */}
       <DashboardViewHeader
         dashboardName="Dashboard LIDERA Lab"

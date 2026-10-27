@@ -199,9 +199,6 @@ export const Sidebar: React.FC<Props> = ({
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
                 1. Dashboard General
               </span>
-              <span className="text-[9px] bg-slate-800 text-amber-400 px-1.5 py-0.2 rounded font-bold border border-amber-400/20">
-                Etapas 1-4
-              </span>
             </div>
             <ChevronDown
               className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-hover:text-slate-200 ${
@@ -254,9 +251,6 @@ export const Sidebar: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
                 2. Dashboard Convocatoria
-              </span>
-              <span className="text-[9px] bg-[#2E9E82]/20 text-[#2E9E82] px-1.5 py-0.2 rounded font-bold border border-[#2E9E82]/30">
-                6 Vistas
               </span>
             </div>
             <ChevronDown
@@ -311,9 +305,6 @@ export const Sidebar: React.FC<Props> = ({
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
                 3. Dashboard Lecturas
               </span>
-              <span className="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.2 rounded font-bold border border-blue-400/30">
-                Foco Activo
-              </span>
             </div>
             <ChevronDown
               className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-hover:text-slate-200 ${
@@ -366,9 +357,6 @@ export const Sidebar: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
                 4. Dashboard Entrevistas
-              </span>
-              <span className="text-[9px] bg-[#2E9E82]/20 text-[#2E9E82] px-1.5 py-0.2 rounded font-bold border border-[#2E9E82]/30">
-                Nuevo
               </span>
             </div>
             <ChevronDown
@@ -423,8 +411,8 @@ export const Sidebar: React.FC<Props> = ({
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
                 5. Dashboard LIDERA Lab
               </span>
-              <span className="text-[9px] bg-teal-500/20 text-teal-400 px-1.5 py-0.2 rounded font-bold border border-teal-400/30">
-                Presencial
+              <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-black uppercase tracking-wider">
+                Nuevo
               </span>
             </div>
             <ChevronDown

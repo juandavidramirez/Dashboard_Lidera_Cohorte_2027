@@ -10,7 +10,8 @@ import {
   LayoutDashboard,
   BookOpen,
   Network,
-  ExternalLink
+  ExternalLink,
+  FlaskConical
 } from 'lucide-react';
 import { dataStore } from '../lib/dataStore';
 import { supabaseUrl, setCustomSupabaseCredentials, clearCustomSupabaseCredentials } from '../lib/supabase';
@@ -20,6 +21,7 @@ interface Props {
   onSyncSheets: () => void;
   onSyncLecturas?: () => void;
   onSyncEntrevistas?: () => void;
+  onSyncLab?: () => void;
   onSyncAll?: () => void;
   onResetData: () => void;
   isSyncing: boolean;
@@ -32,6 +34,7 @@ export const Header: React.FC<Props> = ({
   onSyncSheets,
   onSyncLecturas,
   onSyncEntrevistas,
+  onSyncLab,
   onSyncAll,
   onResetData,
   isSyncing,
@@ -183,11 +186,6 @@ export const Header: React.FC<Props> = ({
                             <span className="text-xs font-bold text-slate-900">
                               Dashboard de Convocatoria
                             </span>
-                            {activeTab === 'overview' && (
-                              <span className="text-[9px] bg-amber-100 text-amber-900 font-extrabold px-1.5 py-0.2 rounded border border-amber-300">
-                                Activo
-                              </span>
-                            )}
                           </div>
                           <span className="text-[10px] text-slate-500 block">
                             Fuente: Google Sheets / candidates_convocatoria
@@ -230,11 +228,6 @@ export const Header: React.FC<Props> = ({
                             <span className="text-xs font-bold text-slate-900">
                               Dashboard de Lecturas
                             </span>
-                            {activeTab === 'lecturas_progress' && (
-                              <span className="text-[9px] bg-emerald-100 text-emerald-900 font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
-                                Activo
-                              </span>
-                            )}
                           </div>
                           <span className="text-[10px] text-slate-500 block">
                             Fuente: Supabase (lecturas_progreso)
@@ -277,11 +270,6 @@ export const Header: React.FC<Props> = ({
                             <span className="text-xs font-bold text-slate-900">
                               Dashboard de Entrevistas
                             </span>
-                            {activeTab === 'entrevistas_progress' && (
-                              <span className="text-[9px] bg-emerald-100 text-emerald-900 font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
-                                Activo
-                              </span>
-                            )}
                           </div>
                           <span className="text-[10px] text-slate-500 block">
                             Fuente: Supabase (entrevistas_con_perfil)
@@ -312,7 +300,52 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* 4. Dashboard General (Embudo Completo) */}
+                  {/* 4. Dashboard de LIDERA Lab */}
+                  <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-amber-50 text-[#F2A900] border border-amber-200">
+                          <FlaskConical className="w-4 h-4 text-amber-700" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900">
+                              Dashboard de LIDERA Lab
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 block">
+                            Fuente: Supabase (lab_progreso)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[9px] bg-amber-500 text-white font-black px-1.5 py-0.2 rounded uppercase tracking-wider ml-auto">
+                      Nuevo
+                    </span>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                      <button
+                        onClick={() => handleNavigate('lab_progress')}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-950 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Ver sección
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (onSyncLab) onSyncLab();
+                          setIsDropdownOpen(false);
+                        }}
+                        disabled={isSyncing}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#F2A900] text-slate-950 hover:bg-amber-500 px-2.5 py-1 rounded-md transition-colors shadow-2xs disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                        Actualizar datos
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 5. Dashboard General (Embudo Completo) */}
                   <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
@@ -323,9 +356,6 @@ export const Header: React.FC<Props> = ({
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-bold text-slate-900">
                               Dashboard General
-                            </span>
-                            <span className="text-[9px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.2 rounded border border-slate-200">
-                              En constr.
                             </span>
                           </div>
                           <span className="text-[10px] text-slate-500 block">

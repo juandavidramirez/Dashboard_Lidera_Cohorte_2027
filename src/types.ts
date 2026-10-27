@@ -426,9 +426,13 @@ export interface LabRecord {
 
   // Promedios por sección calculados (Fórmula 4.2)
   promedio_clase_5min?: number | null;
+  n_clase_5min?: number | null;
   promedio_actividad_grupal?: number | null;
+  n_actividad_grupal?: number | null;
   promedio_juego_roles?: number | null;
+  n_juego_roles?: number | null;
   promedio_lidera_finanzas?: number | null;
+  n_lidera_finanzas?: number | null;
 
   // Perfil del candidato cruzado (Candidates / Lecturas / Entrevistas)
   full_name: string;
@@ -458,6 +462,21 @@ export interface LabRecord {
   recomendacion_postulante_entrevista?: string | null;
   comentarios_entrevista?: string | null;
   evaluador_entrevista?: string | null;
+
+  // Comentarios cualitativos detallados de etapas previas (almacenados en lab_progreso)
+  comentario_logros?: string | null;
+  comentario_perseverancia?: string | null;
+  comentario_compromiso?: string | null;
+  comentario_relaciones?: string | null;
+  comentario_ajuste?: string | null;
+  comentario_ingles?: string | null;
+
+  // Puntajes académicos previos de entrevista
+  puntaje_academico_universidad?: number | null;
+  coeficiente_universidad?: number | null;
+  bandera_pregrado?: number | null;
+  puntaje_icfes?: number | null;
+  puntaje_logros?: number | null;
 
   // Etapa alcanzada y fechas del proceso
   etapa_alcanzada: LabEtapaAlcanzada;
