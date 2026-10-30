@@ -358,7 +358,7 @@ export interface EntrevistasResultadosBreakdown {
 // TIPOS PARA DASHBOARD LIDERA LAB (COHORTE 2027)
 // ==========================================
 
-export type LabEtapaAlcanzada = 'Aplicó' | 'Lecturas' | 'Entrevista' | 'Lab' | 'Matriculación';
+export type LabEtapaAlcanzada = 'Aplicó' | 'Lecturas' | 'Entrevista' | 'Lab' | 'Comité';
 
 export interface LabRecord {
   // Llaves

@@ -25,7 +25,14 @@ export const OPINION_LAB_VALORES = {
 export function isLabAceptado(opinion?: string | null): boolean {
   if (!opinion) return false;
   const clean = stripHtml(opinion).toUpperCase().trim();
-  return clean.startsWith('ACEPTADO') || clean.includes('ACEPTAD');
+  return (
+    clean.startsWith('ACEPTADO') ||
+    clean.includes('ACEPTAD') ||
+    clean.includes('PASAR') ||
+    clean.includes('APROBADO') ||
+    clean.includes('FAVORABLE') ||
+    clean.includes('SI')
+  );
 }
 
 export function isLabRechazado(opinion?: string | null): boolean {

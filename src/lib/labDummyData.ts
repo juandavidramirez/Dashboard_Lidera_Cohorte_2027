@@ -273,7 +273,7 @@ export function generateLabDummyData(): LabRecord[] {
     if (!asistio) {
       etapaAlcanzada = 'Entrevista'; // Se quedó en entrevista
     } else if (isAceptadoLab && evaluacion_completa === 'Si') {
-      etapaAlcanzada = 'Matriculación';
+      etapaAlcanzada = 'Comité';
     } else {
       etapaAlcanzada = 'Lab';
     }

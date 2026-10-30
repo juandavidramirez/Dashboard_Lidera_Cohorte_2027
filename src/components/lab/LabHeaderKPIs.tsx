@@ -139,13 +139,13 @@ export const LabHeaderKPIs: React.FC<Props> = ({ kpis, onFilterNoAsistieron }) =
         </div>
       </div>
 
-      {/* 4. Pasan a Matriculación */}
+      {/* 4. Pasan a Comité */}
       <div className="bg-white border border-slate-200/90 rounded-xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-bold uppercase tracking-tight text-slate-700 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2E9E82]" />
-              Pasan a Matriculación
+              Pasan a Comité
             </span>
             <GraduationCap className="w-4 h-4 text-[#2E9E82]" />
           </div>

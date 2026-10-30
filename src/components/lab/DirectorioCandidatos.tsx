@@ -79,7 +79,7 @@ export const DirectorioCandidatos: React.FC<Props> = ({
 
   const getEtapaBadge = (etapa: LabRecord['etapa_alcanzada']) => {
     switch (etapa) {
-      case 'Matriculación':
+      case 'Comité':
         return 'bg-emerald-50 text-emerald-950 border-emerald-300 font-black';
       case 'Lab':
         return 'bg-amber-50 text-amber-950 border-amber-300 font-bold';
@@ -139,7 +139,7 @@ export const DirectorioCandidatos: React.FC<Props> = ({
             className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
           >
             <option value="TODOS">Todas las etapas alcanzadas</option>
-            <option value="Matriculación">Pasan a Matriculación</option>
+            <option value="Comité">Pasan a Comité</option>
             <option value="Lab">Llegaron a Lab</option>
             <option value="Entrevista">Se quedaron en Entrevista</option>
           </select>

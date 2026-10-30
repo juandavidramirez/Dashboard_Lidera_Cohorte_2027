@@ -5,6 +5,7 @@ import { lecturasDataStore } from './lecturasDataStore';
 import { entrevistasDataStore } from './entrevistasDataStore';
 import { stripHtml } from './entrevistasMetricsCalculator';
 import { META_CUPOS, META_ACEPTADOS_LAB, generateLabDummyData } from './labDummyData';
+import { isLabAceptado } from './labMetricsCalculator';
 
 const STORAGE_KEY_LAB = 'exc_lab_progreso_cache_v2';
 
@@ -233,12 +234,16 @@ class LabDataStore {
         const generoClean = row.genero ? String(row.genero).trim() : (lec?.genero || cand?.grupoEtnico || null);
         const ciudadClean = row.ciudad ? String(row.ciudad).trim() : (lec?.ciudad || cand?.city || cand?.departamentoResidencia || null);
 
-        const evalCompleta = (row.evaluacion_completa === 'Si' || row.evaluacion_completa === true) ? 'Si' : 'No';
+        const hasOpinion = Boolean(row.opinion_evaluador_lab && String(row.opinion_evaluador_lab).trim() !== '');
+        const hasComentarios = Boolean(row.comentarios_evaluador_lab && String(row.comentarios_evaluador_lab).trim() !== '');
+        const hasRecomendacion = Boolean(row.recomendacion_postulante_lab && String(row.recomendacion_postulante_lab).trim() !== '');
+
+        const evalCompleta: 'Si' | 'No' = (hasOpinion && hasComentarios && hasRecomendacion) ? 'Si' : 'No';
 
         // Cálculo determinístico de Etapa Alcanzada
         let etapaAlcanzada: LabEtapaAlcanzada = 'Lab';
-        if (opinionCleanLab.toUpperCase().includes('ACEPTAD') && evalCompleta === 'Si') {
-          etapaAlcanzada = 'Matriculación';
+        if (isLabAceptado(opinionCleanLab) && evalCompleta === 'Si') {
+          etapaAlcanzada = 'Comité';
         }
 
         return {

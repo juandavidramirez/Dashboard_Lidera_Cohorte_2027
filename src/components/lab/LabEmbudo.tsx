@@ -73,8 +73,8 @@ export const LabEmbudo: React.FC<Props> = ({ embudo }) => {
       icon: ClipboardCheck
     },
     {
-      id: 'matriculacion',
-      label: 'Pasan a matriculación',
+      id: 'comite',
+      label: 'Pasan a Comité',
       count: embudo.pasanMatriculacion,
       pctPrev: embudo.evaluacionCompletaLab > 0 ? Math.round((embudo.pasanMatriculacion / embudo.evaluacionCompletaLab) * 100) : 0,
       icon: GraduationCap
