@@ -234,11 +234,14 @@ class LabDataStore {
         const generoClean = row.genero ? String(row.genero).trim() : (lec?.genero || cand?.grupoEtnico || null);
         const ciudadClean = row.ciudad ? String(row.ciudad).trim() : (lec?.ciudad || cand?.city || cand?.departamentoResidencia || null);
 
-        const hasOpinion = Boolean(row.opinion_evaluador_lab && String(row.opinion_evaluador_lab).trim() !== '');
-        const hasComentarios = Boolean(row.comentarios_evaluador_lab && String(row.comentarios_evaluador_lab).trim() !== '');
-        const hasRecomendacion = Boolean(row.recomendacion_postulante_lab && String(row.recomendacion_postulante_lab).trim() !== '');
-
-        const evalCompleta: 'Si' | 'No' = (hasOpinion && hasComentarios && hasRecomendacion) ? 'Si' : 'No';
+        const evalCompleta: 'Si' | 'No' = (
+          opinionCleanLab ||
+          (row.comentarios_evaluador_lab && String(row.comentarios_evaluador_lab).trim() !== '') ||
+          (row.recomendacion_postulante_lab && String(row.recomendacion_postulante_lab).trim() !== '') ||
+          row.puntaje_competencias_total !== null ||
+          row.promedio_clase_5min !== null ||
+          row.puntaje_5min !== null
+        ) ? 'Si' : 'No';
 
         // Cálculo determinístico de Etapa Alcanzada
         let etapaAlcanzada: LabEtapaAlcanzada = 'Lab';
