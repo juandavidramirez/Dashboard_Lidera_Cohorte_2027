@@ -156,50 +156,37 @@ export const FichaCandidatoPanel: React.FC<Props> = ({ candidate, isOpen, onClos
             </div>
           </section>
 
-          {/* 2. PUNTAJES FINALES DE COMPETENCIAS */}
+          {/* 2. PUNTAJES Y PROMEDIOS DE ACTIVIDADES (LIDERA LAB) */}
           <section className="space-y-2.5">
-            <h3 className="text-xs font-black uppercase tracking-wider text-[#152238] flex items-center gap-2 border-b-2 border-amber-400 pb-1.5">
-              <Layers className="w-4 h-4 text-[#F2A900]" />
-              2. Puntajes Finales de Competencias (LIDERA Lab)
-            </h3>
+            <div className="flex items-center justify-between border-b-2 border-amber-400 pb-1.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#152238] flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#F2A900]" />
+                2. Puntajes y Promedios de Actividades (LIDERA Lab)
+              </h3>
+              <span className="text-[10px] text-slate-500 font-medium">Extraídos de Promedios_Actividades y Salesforce</span>
+            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">5 Min. Profesor</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_5min ?? '—'}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-600 block font-bold leading-tight mb-1">Promedio Clase 5 min</span>
+                <span className="text-xl font-black font-mono text-slate-900">{candidate.promedio_clase_5min ?? '—'}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">Actividad Grupal</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_actividad_grupal ?? '—'}</span>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-600 block font-bold leading-tight mb-1">Promedio Actividad grupal</span>
+                <span className="text-xl font-black font-mono text-slate-900">{candidate.promedio_actividad_grupal ?? '—'}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">Juego de Roles</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_juego_roles ?? '—'}</span>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-600 block font-bold leading-tight mb-1">Promedio Juego de rol</span>
+                <span className="text-xl font-black font-mono text-slate-900">{candidate.promedio_juego_roles ?? '—'}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">Ajuste Organización</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_ajuste ?? '—'}</span>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-600 block font-bold leading-tight mb-1">Promedio lidera tus finanzas</span>
+                <span className="text-xl font-black font-mono text-slate-900">{candidate.promedio_lidera_finanzas ?? '—'}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">Pensamiento Crítico</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_pensamiento_critico ?? '—'}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">Perseverancia</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_perseverancia ?? '—'}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">Permanencia / Comp.</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_permanencia ?? '—'}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 block font-semibold">Construcción Relaciones</span>
-                <span className="text-base font-black font-mono text-slate-900">{candidate.puntaje_construccion_relaciones ?? '—'}</span>
-              </div>
-              {/* Total Competencias */}
-              <div className="p-2.5 rounded-lg bg-amber-50 border-2 border-amber-400">
-                <span className="text-[10px] text-amber-950 block font-black uppercase">TOTAL COMPETENCIAS</span>
-                <span className="text-lg font-black font-mono text-slate-950">{candidate.puntaje_competencias_total ?? '—'}</span>
+              {/* Total Competencias desde Salesforce */}
+              <div className="p-3 rounded-xl bg-amber-50 border-2 border-amber-400">
+                <span className="text-[10px] text-amber-950 block font-black uppercase tracking-wider mb-1">Total Competencias (Salesforce)</span>
+                <span className="text-xl font-black font-mono text-slate-950">{candidate.puntaje_competencias_total ?? '—'}</span>
               </div>
             </div>
           </section>
@@ -229,9 +216,9 @@ export const FichaCandidatoPanel: React.FC<Props> = ({ candidate, isOpen, onClos
                   {/* Tarjeta Clase de 5 minutos */}
                   <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-slate-800">Clase de 5 Minutos como Profesor</span>
+                      <span className="text-xs font-bold text-slate-800">Promedio Clase 5 min</span>
                       <span className="text-xs font-mono font-bold text-slate-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                        Promedio: {candidate.promedio_clase_5min ?? '—'}
+                        {candidate.promedio_clase_5min ?? '—'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600">
@@ -242,9 +229,9 @@ export const FichaCandidatoPanel: React.FC<Props> = ({ candidate, isOpen, onClos
                   {/* Tarjeta Actividad Grupal */}
                   <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-slate-800">Actividad Grupal</span>
+                      <span className="text-xs font-bold text-slate-800">Promedio Actividad grupal</span>
                       <span className="text-xs font-mono font-bold text-slate-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                        Promedio: {candidate.promedio_actividad_grupal ?? '—'}
+                        {candidate.promedio_actividad_grupal ?? '—'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600">
@@ -255,9 +242,9 @@ export const FichaCandidatoPanel: React.FC<Props> = ({ candidate, isOpen, onClos
                   {/* Tarjeta Juego de Rol */}
                   <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-slate-800">Juego de Rol</span>
+                      <span className="text-xs font-bold text-slate-800">Promedio Juego de rol</span>
                       <span className="text-xs font-mono font-bold text-slate-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                        Promedio: {candidate.promedio_juego_roles ?? '—'}
+                        {candidate.promedio_juego_roles ?? '—'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600">
@@ -268,7 +255,7 @@ export const FichaCandidatoPanel: React.FC<Props> = ({ candidate, isOpen, onClos
                   {/* Tarjeta Lidera tus Finanzas */}
                   <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-slate-800">Lidera tus Finanzas / HO</span>
+                      <span className="text-xs font-bold text-slate-800">Promedio lidera tus finanzas</span>
                       <div className="flex items-center gap-2">
                         {candidate.ho_tarde_dia_entrevista === 'Si' && (
                           <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
@@ -276,7 +263,7 @@ export const FichaCandidatoPanel: React.FC<Props> = ({ candidate, isOpen, onClos
                           </span>
                         )}
                         <span className="text-xs font-mono font-bold text-slate-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                          Puntaje: {candidate.promedio_lidera_finanzas ?? '—'}
+                          {candidate.promedio_lidera_finanzas ?? '—'}
                         </span>
                       </div>
                     </div>

@@ -3,37 +3,31 @@
  * SINCRONIZADOR GOOGLE APPS SCRIPT: MASTER LIDERA LAB -> SUPABASE (POSTGREST)
  * Archivo: Sync_LideraLab_Supabase.gs
  * ============================================================================
- * 
- * Este archivo contiene dos funciones principales:
- * 
- * 1. `extraerComentariosEtapasPrevias()`:
- *    Función de extracción que corre UNA SOLA VEZ (o cuando se requiera refrescar).
- *    Abre los Google Sheets de Lecturas ('Master_Proceso') y Entrevistas ('Master Entrevistas')
- *    por ID, busca ÚNICAMENTE a los candidatos presentes en el Master de LIDERA Lab,
- *    y copia sus observaciones y comentarios cualitativos en la pestaña
- *    'Promedios_Actividades' (o 'Etapas_Previas').
- *    -> NO toca Salesforce.
- *    -> NO actualiza las tablas completas en Supabase.
- *    -> Centraliza todo en el archivo de LIDERA Lab.
- * 
- * 2. `sincronizarLideraLabASupabase()`:
- *    Función de sincronización periódica que lee 'Master', 'Asistencia' y 
- *    'Promedios_Actividades', ensambla los registros completos (incluyendo promedios,
- *    asistencia y comentarios previos) y realiza un UPSERT atómico a `lab_progreso`
- *    en Supabase por lotes de 500 filas ('Prefer: resolution=merge-duplicates').
  *
- * CONFIGURACIÓN DE PROPIEDADES (PropertiesService):
- * En Apps Script: Configuración del proyecto > Propiedades de la secuencia de comandos:
- *   - SUPABASE_URL: ej. https://muyqxxzjcgwyvluzumbt.supabase.co
+ * Contiene:
+ * 1. `extraerComentariosEtapasPrevias()`:
+ *    Abre los Google Sheets de Lecturas ('Master_Proceso') y Entrevistas ('Master Entrevistas'),
+ *    busca SOLO a los candidatos de LIDERA Lab, y copia sus observaciones y comentarios
+ *    a la pestaña 'Promedios_Actividades' del archivo Master LIDERA Lab — CONSERVANDO lo que
+ *    ya haya en esa pestaña (ej. las columnas de promedios de ProcesarLideraLab_9), en vez de
+ *    borrar y reescribir todo (fix 2026-10-29).
+ *
+ * 2. `sincronizarLideraLabASupabase()`:
+ *    Lee 'Master', 'Asistencia' y 'Promedios_Actividades', y hace UPSERT a `lab_progreso`
+ *    en Supabase por lotes de 500 filas ('Prefer: resolution=merge-duplicates'). Ahora SÍ lee
+ *    los promedios/N precalculados de 'Promedios_Actividades' (fix 2026-10-29); antes siempre
+ *    recalculaba desde el Master con una búsqueda de encabezados que fallaba para varios
+ *    componentes.
+ *
+ * CONFIGURACIÓN EN APPS SCRIPT:
+ * Configuración del proyecto > Propiedades de la secuencia de comandos:
+ *   - SUPABASE_URL: https://muyqxxzjcgwyvluzumbt.supabase.co
  *   - SUPABASE_KEY: Clave anon o service_role de Supabase
- *   - SHEET_ID_LECTURAS: ID de Google Sheets del archivo de Lecturas (Master_Proceso)
- *   - SHEET_ID_ENTREVISTAS: ID de Google Sheets del archivo de Entrevistas (Master Entrevistas)
+ *   - SHEET_ID_LECTURAS: ID del Google Sheet de Lecturas (Master_Proceso)
+ *   - SHEET_ID_ENTREVISTAS: ID del Google Sheet de Entrevistas (Master Entrevistas)
  * ============================================================================
  */
 
-// ============================================================================
-// 1. EXTRACCIÓN DE COMENTARIOS PREVIOS HACIA EL SHEET DE LAB (OPCIÓN 2)
-// ============================================================================
 function extraerComentariosEtapasPrevias() {
   const ssLab = SpreadsheetApp.getActiveSpreadsheet();
   const sheetMasterLab = ssLab.getSheetByName('Master');
@@ -45,8 +39,7 @@ function extraerComentariosEtapasPrevias() {
 
   if (!idSheetLecturas || !idSheetEntrevistas) {
     throw new Error(
-      "❌ Faltan las propiedades de script 'SHEET_ID_LECTURAS' o 'SHEET_ID_ENTREVISTAS'.\n" +
-      "Configúralas con el ID del documento de Google Sheets de cada proceso."
+      "❌ Faltan las propiedades 'SHEET_ID_LECTURAS' o 'SHEET_ID_ENTREVISTAS' en PropertiesService."
     );
   }
 
@@ -99,147 +92,177 @@ function extraerComentariosEtapasPrevias() {
     const ced = colCedLec >= 0 ? String(f[colCedLec] || '').trim() : '';
     const obs = colObsLec >= 0 ? String(f[colObsLec] || '').trim() : '';
 
-    if (obs) {
-      if (id) {
-        mapaObsLectura.set(id, obs);
-        if (id.length >= 15) mapaObsLectura.set(id.substring(0, 15), obs);
-      }
-      if (ced) mapaObsLectura.set('CED_' + ced, obs);
+    if (!obs) continue;
+    if (id && (candidatosLabSet.has(id) || (id.length >= 15 && candidatosLabSet.has(id.substring(0, 15))))) {
+      mapaObsLectura.set(id, obs);
+      if (id.length >= 15) mapaObsLectura.set(id.substring(0, 15), obs);
+    }
+    if (ced && candidatosLabSet.has('CED_' + ced)) {
+      mapaObsLectura.set('CED_' + ced, obs);
     }
   }
-  Logger.log(`Observaciones de lectura mapeadas: ${mapaObsLectura.size}`);
 
   // B. Extraer de Entrevistas (Master Entrevistas)
   Logger.log("Leyendo archivo de Entrevistas...");
   const ssEntrevistas = SpreadsheetApp.openById(idSheetEntrevistas);
-  const sheetEntrevistas = ssEntrevistas.getSheetByName('Master') || ssEntrevistas.getSheetByName('Master Entrevistas') || ssEntrevistas.getSheets()[0];
-  const dataEnt = sheetEntrevistas.getDataRange().getValues();
-  const headersEnt = dataEnt[0].map(h => normalizarTexto(h));
+  const sheetEntrevistas = ssEntrevistas.getSheetByName('Master') || ssEntrevistas.getSheets()[0];
+  const dataEntrevistas = sheetEntrevistas.getDataRange().getValues();
+  const headersEnt = dataEntrevistas[0].map(h => normalizarTexto(h));
 
   const colIdDiaEnt = buscarIndiceColumna(headersEnt, ['id dia de entrevista', 'dia de entrevista: id', 'id dia']);
   const colIdContEnt = buscarIndiceColumna(headersEnt, ['id de contacto', 'id contacto']);
   const colCedEnt = buscarIndiceColumna(headersEnt, ['cedula', 'cédula', 'documento']);
 
-  const colLogros = buscarIndiceColumna(headersEnt, ['comentario logros', 'logros personales']);
+  const colLogros = buscarIndiceColumna(headersEnt, ['comentario logros', 'logros personales y labora']);
   const colPersev = buscarIndiceColumna(headersEnt, ['comentario perseverancia', 'perseverancia']);
-  const colComprom = buscarIndiceColumna(headersEnt, ['comentario permanencia', 'permanencia y compromiso', 'compromiso']);
-  const colRelac = buscarIndiceColumna(headersEnt, ['comentario relaciones', 'construccion de relaciones', 'construcción de relaciones']);
+  const colPerman = buscarIndiceColumna(headersEnt, ['comentario permanencia', 'permanencia y compromiso']);
+  const colRelac = buscarIndiceColumna(headersEnt, ['comentario construccion de relaciones', 'construcción de relaciones']);
   const colAjuste = buscarIndiceColumna(headersEnt, ['comentario ajuste', 'ajuste a la organizacion']);
-  const colIngles = buscarIndiceColumna(headersEnt, ['comentario ingles', 'comentario inglés', 'nivel de ingles']);
+  const colIngles = buscarIndiceColumna(headersEnt, ['comentario ingles', 'capacidad de ensenar ingles']);
 
-  const mapaComEntrevista = new Map();
-  for (let i = 1; i < dataEnt.length; i++) {
-    const f = dataEnt[i];
+  const mapaComentariosEntrevista = new Map();
+  for (let i = 1; i < dataEntrevistas.length; i++) {
+    const f = dataEntrevistas[i];
     const idDia = colIdDiaEnt >= 0 ? String(f[colIdDiaEnt] || '').trim() : '';
     const idCont = colIdContEnt >= 0 ? String(f[colIdContEnt] || '').trim() : '';
     const ced = colCedEnt >= 0 ? String(f[colCedEnt] || '').trim() : '';
 
-    const coms = {
-      logros: colLogros >= 0 ? String(f[colLogros] || '').trim() : '',
-      perseverancia: colPersev >= 0 ? String(f[colPersev] || '').trim() : '',
-      compromiso: colComprom >= 0 ? String(f[colComprom] || '').trim() : '',
-      relaciones: colRelac >= 0 ? String(f[colRelac] || '').trim() : '',
-      ajuste: colAjuste >= 0 ? String(f[colAjuste] || '').trim() : '',
-      ingles: colIngles >= 0 ? String(f[colIngles] || '').trim() : ''
+    const esCandidatoLab = (idDia && (candidatosLabSet.has(idDia) || (idDia.length >= 15 && candidatosLabSet.has(idDia.substring(0, 15))))) ||
+                          (idCont && (candidatosLabSet.has(idCont) || (idCont.length >= 15 && candidatosLabSet.has(idCont.substring(0, 15))))) ||
+                          (ced && candidatosLabSet.has('CED_' + ced));
+
+    if (!esCandidatoLab) continue;
+
+    const datosComentarios = {
+      logros: colLogros >= 0 ? limpiarTexto(f[colLogros]) : '',
+      perseverancia: colPersev >= 0 ? limpiarTexto(f[colPersev]) : '',
+      compromiso: colPerman >= 0 ? limpiarTexto(f[colPerman]) : '',
+      relaciones: colRelac >= 0 ? limpiarTexto(f[colRelac]) : '',
+      ajuste: colAjuste >= 0 ? limpiarTexto(f[colAjuste]) : '',
+      ingles: colIngles >= 0 ? limpiarTexto(f[colIngles]) : ''
     };
 
     if (idDia) {
-      mapaComEntrevista.set(idDia, coms);
-      if (idDia.length >= 15) mapaComEntrevista.set(idDia.substring(0, 15), coms);
+      mapaComentariosEntrevista.set(idDia, datosComentarios);
+      if (idDia.length >= 15) mapaComentariosEntrevista.set(idDia.substring(0, 15), datosComentarios);
     }
     if (idCont) {
-      mapaComEntrevista.set(idCont, coms);
-      if (idCont.length >= 15) mapaComEntrevista.set(idCont.substring(0, 15), coms);
+      mapaComentariosEntrevista.set(idCont, datosComentarios);
+      if (idCont.length >= 15) mapaComentariosEntrevista.set(idCont.substring(0, 15), datosComentarios);
     }
-    if (ced) mapaComEntrevista.set('CED_' + ced, coms);
+    if (ced) mapaComentariosEntrevista.set('CED_' + ced, datosComentarios);
   }
-  Logger.log(`Comentarios de entrevista mapeados: ${mapaComEntrevista.size}`);
 
-  // C. Escribir o actualizar en la pestaña 'Promedios_Actividades' del Sheet de Lab
+  // C. Volcar resultados en la pestaña 'Promedios_Actividades' de LIDERA Lab
   let sheetDestino = ssLab.getSheetByName('Promedios_Actividades');
   if (!sheetDestino) {
     sheetDestino = ssLab.insertSheet('Promedios_Actividades');
-    sheetDestino.appendRow([
-      'Id. Día de Entrevista', 'Id. Contacto',
-      'Promedio Clase 5 Minutos', 'N Clase 5 Minutos',
-      'Promedio Actividad Grupal', 'N Actividad Grupal',
-      'Promedio Juego de Roles', 'N Juego de Roles',
-      'Promedio Lidera Finanzas', 'N Lidera Finanzas',
-      'Observaciones Lectura',
-      'Comentario Logros', 'Comentario Perseverancia', 'Comentario Compromiso',
-      'Comentario Relaciones', 'Comentario Ajuste', 'Comentario Inglés'
-    ]);
   }
 
-  const dataDestino = sheetDestino.getDataRange().getValues();
-  const headersDest = dataDestino[0].map(h => normalizarTexto(h));
+  const NOMBRE_COL_ID = 'Id. Día de Entrevista';
+  const NOMBRE_COL_ID_CONT = 'Id. Contacto';
+  const NOMBRE_COL_CED = 'Cédula';
+  const COLUMNAS_COMENTARIOS = [
+    'Observaciones Lectura',
+    'Comentario Logros',
+    'Comentario Perseverancia',
+    'Comentario Permanencia y Compromiso',
+    'Comentario Construcción Relaciones',
+    'Comentario Ajuste a la Organización',
+    'Comentario Inglés',
+  ];
+  const NOMBRE_COL_FECHA = 'Fecha de Extracción';
 
-  let colIdDiaDest = buscarIndiceColumna(headersDest, ['id dia de entrevista', 'id_dia_entrevista', 'id dia']);
-  let colObsLectDest = buscarIndiceColumna(headersDest, ['observaciones lectura']);
-  let colLogrosDest = buscarIndiceColumna(headersDest, ['comentario logros']);
-
-  // Si no existen las columnas de comentarios en Promedios_Actividades, agregarlas al final
-  if (colObsLectDest < 0) {
-    const lastCol = sheetDestino.getLastColumn();
-    sheetDestino.getRange(1, lastCol + 1, 1, 7).setValues([[
-      'Observaciones Lectura',
-      'Comentario Logros', 'Comentario Perseverancia', 'Comentario Compromiso',
-      'Comentario Relaciones', 'Comentario Ajuste', 'Comentario Inglés'
-    ]]);
-    colObsLectDest = lastCol;
-    colLogrosDest = lastCol + 1;
+  // Lee lo que ya existe (si existe), indexado por Id. Día de Entrevista.
+  let encabezadosExistentes = [];
+  const filasExistentesPorId = new Map();
+  if (sheetDestino.getLastRow() > 0 && sheetDestino.getLastColumn() > 0) {
+    const datosExistentes = sheetDestino.getDataRange().getValues();
+    encabezadosExistentes = datosExistentes[0];
+    const iIdExistente = encabezadosExistentes.findIndex(h => normalizarTexto(h) === normalizarTexto(NOMBRE_COL_ID));
+    if (iIdExistente >= 0) {
+      for (let i = 1; i < datosExistentes.length; i++) {
+        const idDia = String(datosExistentes[i][iIdExistente] || '').trim();
+        if (idDia) filasExistentesPorId.set(idDia, datosExistentes[i]);
+      }
+    }
   }
 
-  // Actualizar filas existentes
-  let actualizados = 0;
-  for (let i = 1; i < dataDestino.length; i++) {
-    const idDia = String(dataDestino[i][colIdDiaDest] || '').trim();
-    if (!idDia) continue;
+  // Encabezado final: lo que ya había (para no perder columnas existentes como los promedios),
+  // agregando las de id/comentarios/fecha si todavía no estaban.
+  const encabezadosFinales = encabezadosExistentes.slice();
+  function asegurarColumna(nombre) {
+    const idx = encabezadosFinales.findIndex(h => normalizarTexto(h) === normalizarTexto(nombre));
+    if (idx >= 0) return idx;
+    encabezadosFinales.push(nombre);
+    return encabezadosFinales.length - 1;
+  }
+  const idxId = asegurarColumna(NOMBRE_COL_ID);
+  const idxIdCont = asegurarColumna(NOMBRE_COL_ID_CONT);
+  const idxCed = asegurarColumna(NOMBRE_COL_CED);
+  const idxComentarios = COLUMNAS_COMENTARIOS.map(asegurarColumna);
+  const idxFecha = asegurarColumna(NOMBRE_COL_FECHA);
 
-    const candInfo = mapaLabPorId.get(idDia) || {};
-    const idCont = candInfo.idCont || '';
-    const ced = candInfo.ced || '';
+  const ahora = new Date().toISOString();
+  const filasFinalesPorId = new Map();
 
-    const obs = mapaObsLectura.get(idDia)
+  filasExistentesPorId.forEach((fila, idDia) => {
+    const filaAjustada = encabezadosFinales.map((_, j) => (j < fila.length ? fila[j] : ''));
+    filasFinalesPorId.set(idDia, filaAjustada);
+  });
+
+  mapaLabPorId.forEach((meta, idDia) => {
+    const idCont = meta.idCont;
+    const ced = meta.ced;
+
+    const obsLec = mapaObsLectura.get(idDia)
       || (idDia.length >= 15 ? mapaObsLectura.get(idDia.substring(0, 15)) : '')
       || (idCont ? mapaObsLectura.get(idCont) : '')
-      || (ced ? mapaObsLectura.get('CED_' + ced) : '');
+      || (idCont && idCont.length >= 15 ? mapaObsLectura.get(idCont.substring(0, 15)) : '')
+      || (ced ? mapaObsLectura.get('CED_' + ced) : '')
+      || '';
 
-    const coms = mapaComEntrevista.get(idDia)
-      || (idDia.length >= 15 ? mapaComEntrevista.get(idDia.substring(0, 15)) : '')
-      || (idCont ? mapaComEntrevista.get(idCont) : '')
-      || (ced ? mapaComEntrevista.get('CED_' + ced) : '')
+    const comEnt = mapaComentariosEntrevista.get(idDia)
+      || (idDia.length >= 15 ? mapaComentariosEntrevista.get(idDia.substring(0, 15)) : null)
+      || (idCont ? mapaComentariosEntrevista.get(idCont) : null)
+      || (idCont && idCont.length >= 15 ? mapaComentariosEntrevista.get(idCont.substring(0, 15)) : null)
+      || (ced ? mapaComentariosEntrevista.get('CED_' + ced) : null)
       || {};
 
-    sheetDestino.getRange(i + 1, colObsLectDest + 1, 1, 7).setValues([[
-      obs || '',
-      coms.logros || '',
-      coms.perseverancia || '',
-      coms.compromiso || '',
-      coms.relaciones || '',
-      coms.ajuste || '',
-      coms.ingles || ''
-    ]]);
-    actualizados++;
-  }
+    const valoresComentarios = [
+      obsLec,
+      comEnt.logros || '',
+      comEnt.perseverancia || '',
+      comEnt.compromiso || '',
+      comEnt.relaciones || '',
+      comEnt.ajuste || '',
+      comEnt.ingles || '',
+    ];
 
-  Logger.log(`✅ Extracción completada: ${actualizados} filas actualizadas con comentarios de etapas previas.`);
+    const filaBase = filasFinalesPorId.get(idDia) || encabezadosFinales.map(() => '');
+    filaBase[idxId] = idDia;
+    filaBase[idxIdCont] = idCont;
+    filaBase[idxCed] = ced;
+    idxComentarios.forEach((idx, j) => { filaBase[idx] = valoresComentarios[j]; });
+    filaBase[idxFecha] = ahora;
+    filasFinalesPorId.set(idDia, filaBase);
+  });
+
+  const filasDestino = [encabezadosFinales].concat(Array.from(filasFinalesPorId.values()));
+  sheetDestino.clearContents();
+  sheetDestino.getRange(1, 1, filasDestino.length, encabezadosFinales.length).setValues(filasDestino);
+  SpreadsheetApp.flush();
+
+  Logger.log(`✅ Extracción exitosa: ${mapaLabPorId.size} candidatos con comentarios actualizados en 'Promedios_Actividades' (columnas de promedios existentes conservadas).`);
 }
 
-// ============================================================================
-// 2. SINCRONIZACIÓN LIDERA LAB -> SUPABASE (UPSERT POR LOTES DE 500)
-// ============================================================================
 function sincronizarLideraLabASupabase() {
-  const startTime = new Date();
-  const scriptProps = PropertiesService.getScriptProperties();
-  const SUPABASE_URL = scriptProps.getProperty('SUPABASE_URL');
-  const SUPABASE_KEY = scriptProps.getProperty('SUPABASE_KEY');
+  const props = PropertiesService.getScriptProperties();
+  const SUPABASE_URL = props.getProperty('SUPABASE_URL');
+  const SUPABASE_KEY = props.getProperty('SUPABASE_KEY');
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    throw new Error(
-      "❌ Faltan las propiedades 'SUPABASE_URL' o 'SUPABASE_KEY'.\n" +
-      "Configúralas en: Configuración del proyecto > Propiedades de la secuencia de comandos."
-    );
+    throw new Error("❌ Faltan 'SUPABASE_URL' o 'SUPABASE_KEY' en PropertiesService.");
   }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -249,98 +272,98 @@ function sincronizarLideraLabASupabase() {
   const sheetAsistencia = ss.getSheetByName('Asistencia');
   const sheetPromedios = ss.getSheetByName('Promedios_Actividades');
 
-  // 1. Indexar pestaña Asistencia
+  // 1. Mapa de Asistencia
   const mapaAsistencia = new Map();
-  if (sheetAsistencia && sheetAsistencia.getLastRowNum() > 1) {
+  if (sheetAsistencia) {
     const dataAsis = sheetAsistencia.getDataRange().getValues();
-    const headers = dataAsis[0].map(h => normalizarTexto(h));
-    const colId = buscarIndiceColumna(headers, ['id dia de entrevista', 'id_dia_entrevista', 'id dia']);
-    const colCed = buscarIndiceColumna(headers, ['cedula', 'cédula', 'documento']);
-    const colAsis = buscarIndiceColumna(headers, ['asistencia']);
-    const colCom = buscarIndiceColumna(headers, ['comentarios', 'observaciones']);
-    const colB1 = buscarIndiceColumna(headers, ['bloque 1', 'b1']);
-    const colB2 = buscarIndiceColumna(headers, ['bloque 2', 'b2']);
-    const colB3 = buscarIndiceColumna(headers, ['bloque 3', 'b3']);
-    const colTotB = buscarIndiceColumna(headers, ['bloques asistidos']);
-    const colFormato = buscarIndiceColumna(headers, ['formato clase']);
+    const hAsis = dataAsis[0].map(h => normalizarTexto(h));
+    const colIdDiaAsis = buscarIndiceColumna(hAsis, ['id dia de entrevista', 'dia de entrevista: id', 'id dia']);
+    const colCedAsis = buscarIndiceColumna(hAsis, ['cedula', 'cédula', 'documento']);
+    const colAsis = buscarIndiceColumna(hAsis, ['asistencia']);
+    const colB1 = buscarIndiceColumna(hAsis, ['bloque 1']);
+    const colB2 = buscarIndiceColumna(hAsis, ['bloque 2']);
+    const colB3 = buscarIndiceColumna(hAsis, ['bloque 3']);
+    const colBloquesAsis = buscarIndiceColumna(hAsis, ['bloques asistidos']);
+    const colComAsis = buscarIndiceColumna(hAsis, ['comentarios', 'observaciones']);
 
     for (let i = 1; i < dataAsis.length; i++) {
       const f = dataAsis[i];
-      const id = colId >= 0 ? String(f[colId] || '').trim() : '';
-      const ced = colCed >= 0 ? String(f[colCed] || '').trim() : '';
-      const estado = colAsis >= 0 ? String(f[colAsis] || '').trim() : '';
-      const asistio = (estado.toLowerCase() === 'asistió' || estado.toLowerCase() === 'asistio');
+      const idDia = colIdDiaAsis >= 0 ? String(f[colIdDiaAsis] || '').trim() : '';
+      const ced = colCedAsis >= 0 ? String(f[colCedAsis] || '').trim() : '';
+      const estadoAsis = colAsis >= 0 ? String(f[colAsis] || '').trim() : '';
 
-      const info = {
-        asistio,
+      const asisObj = {
+        asistio: estadoAsis.toLowerCase() === 'asistió' || estadoAsis.toLowerCase() === 'asistio',
         asistencia_b1: colB1 >= 0 ? parsearNumero(f[colB1]) : null,
         asistencia_b2: colB2 >= 0 ? parsearNumero(f[colB2]) : null,
         asistencia_b3: colB3 >= 0 ? parsearNumero(f[colB3]) : null,
-        bloques_asistidos: colTotB >= 0 ? parsearEntero(f[colTotB]) : (asistio ? 3 : 0),
-        comentarios_asistencia: colCom >= 0 ? String(f[colCom] || '').trim() : null,
-        formato_clase: colFormato >= 0 ? String(f[colFormato] || '').trim() : 'Presencial'
+        bloques_asistidos: colBloquesAsis >= 0 ? parsearNumero(f[colBloquesAsis]) : null,
+        comentarios_asistencia: colComAsis >= 0 ? limpiarTexto(f[colComAsis]) : null
       };
-      if (id) {
-        mapaAsistencia.set(id, info);
-        if (id.length >= 15) mapaAsistencia.set(id.substring(0, 15), info);
+
+      if (idDia) {
+        mapaAsistencia.set(idDia, asisObj);
+        if (idDia.length >= 15) mapaAsistencia.set(idDia.substring(0, 15), asisObj);
       }
-      if (ced) mapaAsistencia.set('CED_' + ced, info);
+      if (ced) mapaAsistencia.set('CED_' + ced, asisObj);
     }
   }
 
-  // 2. Indexar pestaña Promedios_Actividades (Promedios + Comentarios Previos)
+  // 2. Mapa de Promedios y Comentarios Previos
   const mapaPromedios = new Map();
-  if (sheetPromedios && sheetPromedios.getLastRowNum() > 1) {
+  if (sheetPromedios) {
     const dataProm = sheetPromedios.getDataRange().getValues();
-    const headers = dataProm[0].map(h => normalizarTexto(h));
-    const colId = buscarIndiceColumna(headers, ['id dia de entrevista', 'id_dia_entrevista', 'id dia']);
-    const colCed = buscarIndiceColumna(headers, ['cedula', 'cédula']);
+    const hProm = dataProm[0].map(h => normalizarTexto(h));
+    const colIdDiaP = buscarIndiceColumna(hProm, ['id dia de entrevista', 'dia de entrevista: id', 'id dia']);
+    const colCedP = buscarIndiceColumna(hProm, ['cedula', 'cédula', 'documento']);
 
-    const colP5 = buscarIndiceColumna(headers, ['promedio clase 5 minutos', 'promedio 5 min']);
-    const colN5 = buscarIndiceColumna(headers, ['n clase 5 minutos', 'n 5 min']);
-    const colPG = buscarIndiceColumna(headers, ['promedio actividad grupal', 'promedio grupal']);
-    const colNG = buscarIndiceColumna(headers, ['n actividad grupal']);
-    const colPR = buscarIndiceColumna(headers, ['promedio juego de roles', 'promedio roles']);
-    const colNR = buscarIndiceColumna(headers, ['n juego de roles']);
-    const colPF = buscarIndiceColumna(headers, ['promedio lidera finanzas', 'promedio finanzas']);
-    const colNF = buscarIndiceColumna(headers, ['n lidera finanzas']);
+    const colObsLec = buscarIndiceColumna(hProm, ['observaciones lectura']);
+    const colLogros = buscarIndiceColumna(hProm, ['comentario logros']);
+    const colPersev = buscarIndiceColumna(hProm, ['comentario perseverancia']);
+    const colPerman = buscarIndiceColumna(hProm, ['comentario permanencia y compromiso', 'comentario permanencia']);
+    const colRelac = buscarIndiceColumna(hProm, ['comentario construccion relaciones', 'comentario construccion de relaciones']);
+    const colAjuste = buscarIndiceColumna(hProm, ['comentario ajuste a la organizacion', 'comentario ajuste']);
+    const colIngles = buscarIndiceColumna(hProm, ['comentario ingles']);
 
-    // Comentarios previos
-    const colObsLec = buscarIndiceColumna(headers, ['observaciones lectura', 'observaciones lector']);
-    const colLogros = buscarIndiceColumna(headers, ['comentario logros']);
-    const colPersev = buscarIndiceColumna(headers, ['comentario perseverancia']);
-    const colComprom = buscarIndiceColumna(headers, ['comentario compromiso', 'comentario permanencia']);
-    const colRelac = buscarIndiceColumna(headers, ['comentario relaciones']);
-    const colAjuste = buscarIndiceColumna(headers, ['comentario ajuste']);
-    const colIngles = buscarIndiceColumna(headers, ['comentario ingles', 'comentario inglés']);
+    // Columnas exactas de promedios/N de las 4 actividades
+    const colPromClase5 = buscarIndiceColumna(hProm, ['promedio clase 5 min', 'promedio clase 5min']);
+    const colNClase5 = buscarIndiceColumna(hProm, ['n clase 5 min', 'n clase 5min']);
+    const colPromGrupal = buscarIndiceColumna(hProm, ['promedio actividad grupal']);
+    const colNGrupal = buscarIndiceColumna(hProm, ['n actividad grupal']);
+    const colPromRoles = buscarIndiceColumna(hProm, ['promedio juego de rol', 'promedio juego de roles']);
+    const colNRoles = buscarIndiceColumna(hProm, ['n juego de rol', 'n juego de roles']);
+    const colPromFinanzas = buscarIndiceColumna(hProm, ['promedio lidera tus finanzas', 'promedio lidera finanzas']);
+    const colNFinanzas = buscarIndiceColumna(hProm, ['n lidera tus finanzas', 'n lidera finanzas']);
 
     for (let i = 1; i < dataProm.length; i++) {
       const f = dataProm[i];
-      const id = colId >= 0 ? String(f[colId] || '').trim() : '';
-      const ced = colCed >= 0 ? String(f[colCed] || '').trim() : '';
-      const info = {
-        promedio_clase_5min: colP5 >= 0 ? parsearNumero(f[colP5]) : null,
-        n_clase_5min: colN5 >= 0 ? parsearEntero(f[colN5]) : null,
-        promedio_actividad_grupal: colPG >= 0 ? parsearNumero(f[colPG]) : null,
-        n_actividad_grupal: colNG >= 0 ? parsearEntero(f[colNG]) : null,
-        promedio_juego_roles: colPR >= 0 ? parsearNumero(f[colPR]) : null,
-        n_juego_roles: colNR >= 0 ? parsearEntero(f[colNR]) : null,
-        promedio_lidera_finanzas: colPF >= 0 ? parsearNumero(f[colPF]) : null,
-        n_lidera_finanzas: colNF >= 0 ? parsearEntero(f[colNF]) : null,
+      const idDia = colIdDiaP >= 0 ? String(f[colIdDiaP] || '').trim() : '';
+      const ced = colCedP >= 0 ? String(f[colCedP] || '').trim() : '';
 
+      const promObj = {
         observaciones_lectura: colObsLec >= 0 ? limpiarTexto(f[colObsLec]) : null,
         comentario_logros: colLogros >= 0 ? limpiarTexto(f[colLogros]) : null,
         comentario_perseverancia: colPersev >= 0 ? limpiarTexto(f[colPersev]) : null,
-        comentario_compromiso: colComprom >= 0 ? limpiarTexto(f[colComprom]) : null,
+        comentario_compromiso: colPerman >= 0 ? limpiarTexto(f[colPerman]) : null,
         comentario_relaciones: colRelac >= 0 ? limpiarTexto(f[colRelac]) : null,
         comentario_ajuste: colAjuste >= 0 ? limpiarTexto(f[colAjuste]) : null,
-        comentario_ingles: colIngles >= 0 ? limpiarTexto(f[colIngles]) : null
+        comentario_ingles: colIngles >= 0 ? limpiarTexto(f[colIngles]) : null,
+
+        promedio_clase_5min: colPromClase5 >= 0 ? parsearNumero(f[colPromClase5]) : undefined,
+        n_clase_5min: colNClase5 >= 0 ? parsearNumero(f[colNClase5]) : undefined,
+        promedio_actividad_grupal: colPromGrupal >= 0 ? parsearNumero(f[colPromGrupal]) : undefined,
+        n_actividad_grupal: colNGrupal >= 0 ? parsearNumero(f[colNGrupal]) : undefined,
+        promedio_juego_roles: colPromRoles >= 0 ? parsearNumero(f[colPromRoles]) : undefined,
+        n_juego_roles: colNRoles >= 0 ? parsearNumero(f[colNRoles]) : undefined,
+        promedio_lidera_finanzas: colPromFinanzas >= 0 ? parsearNumero(f[colPromFinanzas]) : undefined,
+        n_lidera_finanzas: colNFinanzas >= 0 ? parsearNumero(f[colNFinanzas]) : undefined,
       };
-      if (id) {
-        mapaPromedios.set(id, info);
-        if (id.length >= 15) mapaPromedios.set(id.substring(0, 15), info);
+
+      if (idDia) {
+        mapaPromedios.set(idDia, promObj);
+        if (idDia.length >= 15) mapaPromedios.set(idDia.substring(0, 15), promObj);
       }
-      if (ced) mapaPromedios.set('CED_' + ced, info);
+      if (ced) mapaPromedios.set('CED_' + ced, promObj);
     }
   }
 
@@ -357,66 +380,69 @@ function sincronizarLideraLabASupabase() {
   const colSubgrupo = buscarIndiceColumna(headers, ['subgrupo', 'grupo']);
   const colEvaluadorAsis = buscarIndiceColumna(headers, ['evaluador asistencia', 'evaluador']);
 
-  // Componentes individuales
+  // Componentes individuales (Master)
   const colSerProfe = buscarIndiceColumna(headers, ['ho ser profe', 'ser profe']);
   const colImIntereses = buscarIndiceColumna(headers, ['incluye intereses']);
   const colImComPres = buscarIndiceColumna(headers, ['comunicacion y presencia', 'comunicación y presencia']);
   const colImEscucha = buscarIndiceColumna(headers, ['escucha y responde']);
   const colComSerProfe = buscarIndiceColumna(headers, ['comentarios ser profesor']);
 
-  const colDinamica = buscarIndiceColumna(headers, ['dinamica de grupo', 'dinámica de grupo']);
-  const colImAtenGA = buscarIndiceColumna(headers, ['atencion ga', 'atención ga']);
+  const colDinamica = buscarIndiceColumna(headers, ['dinamica grupal', 'dinamica de grupo', 'dinamica']);
+  const colImAtenGA = buscarIndiceColumna(headers, ['atencion a otros ga', 'atención a otros ga']);
   const colImEmpatGA = buscarIndiceColumna(headers, ['empatia ga', 'empatía ga']);
-  const colActGrPersev = buscarIndiceColumna(headers, ['perseverancia ag']);
+  const colActGrPersev = buscarIndiceColumna(headers, ['act gr perseverancia', 'perseverancia ga']);
   const colComGrupal = buscarIndiceColumna(headers, ['comentarios actividad grupal']);
 
-  const colImAtenJR = buscarIndiceColumna(headers, ['atencion jr', 'atención jr']);
+  const colImAtenJR = buscarIndiceColumna(headers, ['atencion a otros jr', 'atención a otros jr']);
   const colImEmpatJR = buscarIndiceColumna(headers, ['empatia jr', 'empatía jr']);
-  const colImAudiencia = buscarIndiceColumna(headers, ['considera audiencia jr', 'audiencia jr']);
-  const colComRoles = buscarIndiceColumna(headers, ['comentarios juego roles']);
+  const colImAudiencia = buscarIndiceColumna(headers, ['audiencia jr', 'audiencia']);
+  const colComRoles = buscarIndiceColumna(headers, ['comentarios juego de roles']);
 
-  const colHoSemana = buscarIndiceColumna(headers, ['ho semana vida eco', 'semana vida eco']);
-  const colHoTarde = buscarIndiceColumna(headers, ['ho tarde dia entrevista', 'tarde dia de entrevista']);
-  const colComHo = buscarIndiceColumna(headers, ['comentarios ho']);
+  const colHoSemana = buscarIndiceColumna(headers, ['ho semana', 'ho semana de vida', 'lidera tus finanzas']);
+  const colHoTarde = buscarIndiceColumna(headers, ['ho tarde', 'llegada tarde']);
+  const colComHo = buscarIndiceColumna(headers, ['comentarios ho', 'comentarios finanzas']);
 
-  // Puntajes finales y Decisión
-  const colP5min = buscarIndiceColumna(headers, ['puntaje final 5 minutos como profesor', 'puntaje final 5 minutos']);
-  const colPGrupal = buscarIndiceColumna(headers, ['puntaje final actividad grupal', 'actividad grupal']);
-  const colPRoles = buscarIndiceColumna(headers, ['puntaje final juego de roles', 'juego de roles 1']);
-  const colPAjuste = buscarIndiceColumna(headers, ['puntaje final ajuste', 'ajuste']);
-  const colPPensCrit = buscarIndiceColumna(headers, ['puntaje final pensamiento critico', 'pensamiento crítico', 'pensamiento critico']);
-  const colPPersev = buscarIndiceColumna(headers, ['puntaje final perseverancia', 'perseverancia']);
-  const colPPerman = buscarIndiceColumna(headers, ['puntaje final permanencia', 'permanencia y compromiso']);
-  const colPRelac = buscarIndiceColumna(headers, ['puntaje final construccion de relaciones', 'construcción de relaciones']);
-  const colPTotal = buscarIndiceColumna(headers, ['puntaje final assessment center', 'puntaje competencias', 'puntaje total competencias', 'final assessment center score']);
-  const colRecModelo = buscarIndiceColumna(headers, ['recomendacion del modelo', 'recomendación del modelo']);
+  // Puntajes finales calculados en Salesforce
+  const colP5min = buscarIndiceColumna(headers, ['puntaje 5 min', '5 min profesor']);
+  const colPGrupal = buscarIndiceColumna(headers, ['puntaje actividad grupal']);
+  const colPRoles = buscarIndiceColumna(headers, ['puntaje juego de roles', 'puntaje juego roles']);
+  const colPAjuste = buscarIndiceColumna(headers, ['puntaje ajuste', 'ajuste organizacion']);
+  const colPPensCrit = buscarIndiceColumna(headers, ['pensamiento critico']);
+  const colPPersev = buscarIndiceColumna(headers, ['puntaje perseverancia']);
+  const colPPerman = buscarIndiceColumna(headers, ['puntaje permanencia', 'permanencia compromiso']);
+  const colPRelac = buscarIndiceColumna(headers, ['construccion de relaciones', 'construccion relaciones']);
+  const colPTotal = buscarIndiceColumna(headers, ['puntaje competencias', 'total competencias', 'puntaje total']);
 
-  const colOpinionLab = buscarIndiceColumna(headers, ['opinion del evaluador', 'opinión del evaluador']);
-  const colComLab = buscarIndiceColumna(headers, ['comentarios del evaluador']);
-  const colRecPostulante = buscarIndiceColumna(headers, ['recomendacion al postulante']);
-  const colEvalCompleta = buscarIndiceColumna(headers, ['evaluacion completa', 'evaluación completa']);
+  const colRecModelo = buscarIndiceColumna(headers, ['recomendacion modelo']);
+  const colOpinionLab = buscarIndiceColumna(headers, ['decision evaluador lab', 'opinion evaluador lab', 'decision evaluador']);
+  const colComLab = buscarIndiceColumna(headers, ['comentarios evaluador lab', 'comentarios evaluador']);
+  const colRecPostulante = buscarIndiceColumna(headers, ['recomendacion postulante lab', 'recomendacion postulante']);
+  const colEvalComp = buscarIndiceColumna(headers, ['evaluacion completa', 'evaluación completa']);
 
   const filas = [];
+
   for (let i = 1; i < dataMaster.length; i++) {
     const r = dataMaster[i];
-    const idDia = String(r[colIdDia] || '').trim();
-    if (!idDia) continue;
-
+    const idDia = colIdDia >= 0 ? String(r[colIdDia] || '').trim() : '';
     const idContacto = colIdContacto >= 0 ? String(r[colIdContacto] || '').trim() : '';
     const cedula = colCedula >= 0 ? String(r[colCedula] || '').trim() : '';
 
-    const asis = mapaAsistencia.get(idDia)
-      || (idDia.length >= 15 ? mapaAsistencia.get(idDia.substring(0, 15)) : null)
-      || (cedula ? mapaAsistencia.get('CED_' + cedula) : null)
+    if (!idDia && !idContacto) continue;
+
+    // Buscar en Asistencia
+    const asis = (idDia && mapaAsistencia.get(idDia))
+      || (idDia && idDia.length >= 15 && mapaAsistencia.get(idDia.substring(0, 15)))
+      || (cedula && mapaAsistencia.get('CED_' + cedula))
       || {};
 
-    const prom = mapaPromedios.get(idDia)
-      || (idDia.length >= 15 ? mapaPromedios.get(idDia.substring(0, 15)) : null)
-      || (cedula ? mapaPromedios.get('CED_' + cedula) : null)
+    // Buscar en Promedios_Actividades
+    const prom = (idDia && mapaPromedios.get(idDia))
+      || (idDia && idDia.length >= 15 && mapaPromedios.get(idDia.substring(0, 15)))
+      || (cedula && mapaPromedios.get('CED_' + cedula))
       || {};
 
-    const rawEval = colEvalCompleta >= 0 ? String(r[colEvalCompleta] || '').trim().toLowerCase() : '';
-    const evalComp = (rawEval === 'si' || rawEval === 'sí' || rawEval === 'true') ? 'Si' : 'No';
+    const rawEvalComp = colEvalComp >= 0 ? String(r[colEvalComp] || '').trim().toLowerCase() : '';
+    const evalComp = (rawEvalComp === 'si' || rawEvalComp === 'true' || rawEvalComp === 'sí') ? 'Si' : 'No';
 
     const sp = colSerProfe >= 0 ? parsearNumero(r[colSerProfe]) : null;
     const ii = colImIntereses >= 0 ? parsearNumero(r[colImIntereses]) : null;
@@ -488,6 +514,7 @@ function sincronizarLideraLabASupabase() {
       recomendacion_postulante_lab: colRecPostulante >= 0 ? limpiarTexto(r[colRecPostulante]) : null,
       evaluacion_completa: evalComp,
 
+      // Promedios de las 4 actividades
       promedio_clase_5min: prom.promedio_clase_5min !== undefined ? prom.promedio_clase_5min : calcularPromedio([sp, ii, icp, ier]),
       n_clase_5min: prom.n_clase_5min !== undefined ? prom.n_clase_5min : contarValidos([sp, ii, icp, ier]),
 
@@ -539,91 +566,85 @@ function sincronizarLideraLabASupabase() {
       if (code >= 200 && code < 300) {
         sincronizados += lote.length;
       } else {
-        errores.push(`Lote ${Math.floor(i / BATCH_SIZE) + 1} (HTTP ${code}): ${resp.getContentText().substring(0, 250)}`);
+        errores.push(`Lote ${i / BATCH_SIZE + 1}: Error HTTP ${code} - ${resp.getContentText()}`);
       }
     } catch (e) {
-      errores.push(`Lote ${Math.floor(i / BATCH_SIZE) + 1} Excepción: ${e.message}`);
+      errores.push(`Lote ${i / BATCH_SIZE + 1}: Excepción - ${e.message}`);
     }
   }
 
-  // 5. Registrar en pestaña de log
-  escribirLogEnHoja(ss, {
-    fecha: new Date(),
-    leidos: filas.length,
-    sincronizados,
-    errores: errores.length,
-    detalleErrores: errores.join(' | ') || 'Ninguno'
-  });
-
-  Logger.log(`Sincronización terminada: ${sincronizados}/${filas.length} registros. Errores: ${errores.length}`);
+  Logger.log(`Resultado Sync: ${sincronizados} filas sincronizadas en Supabase.`);
+  if (errores.length > 0) {
+    Logger.log("Errores detectados:\n" + errores.join("\n"));
+  }
 }
 
+// ============================================================================
+// FUNCIONES AUXILIARES DE LIMPIEZA Y PARSEO
+// ============================================================================
 function normalizarTexto(txt) {
-  if (!txt) return '';
-  return String(txt).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (txt === null || txt === undefined) return '';
+  return String(txt)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function buscarIndiceColumna(headers, posibles) {
-  for (let i = 0; i < headers.length; i++) {
-    const h = headers[i];
-    for (const p of posibles) {
-      const pn = normalizarTexto(p);
-      if (h === pn || h.indexOf(pn) >= 0) return i;
-    }
+function buscarIndiceColumna(headersNormalizadas, variantes) {
+  for (const v of variantes) {
+    const vNorm = normalizarTexto(v);
+    const idxExacto = headersNormalizadas.indexOf(vNorm);
+    if (idxExacto >= 0) return idxExacto;
+  }
+  for (const v of variantes) {
+    const vNorm = normalizarTexto(v);
+    const idxParcial = headersNormalizadas.findIndex(h => h.includes(vNorm));
+    if (idxParcial >= 0) return idxParcial;
   }
   return -1;
 }
 
-function parsearNumero(v) {
-  if (v === null || v === undefined || v === '') return null;
-  const s = String(v).replace(',', '.').replace(/[^0-9.-]/g, '').trim();
-  const n = parseFloat(s);
-  return isNaN(n) ? null : n;
+function parsearNumero(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'number') return isNaN(val) ? null : val;
+  const str = String(val).replace(',', '.').replace(/[^0-9.-]/g, '').trim();
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
 }
 
-function parsearEntero(v) {
-  if (v === null || v === undefined || v === '') return null;
-  const s = String(v).replace(/[^0-9-]/g, '').trim();
-  const n = parseInt(s, 10);
-  return isNaN(n) ? null : n;
+function limpiarTexto(val) {
+  if (val === null || val === undefined) return null;
+  const str = String(val).trim();
+  return str.length > 0 ? str : null;
 }
 
-function limpiarTexto(v) {
-  if (v === null || v === undefined) return null;
-  const s = String(v).trim();
-  return (s === '' || s === '-' || s === '#N/A') ? null : s;
-}
-
-function formatearFecha(v) {
-  if (!v) return null;
-  if (v instanceof Date) return Utilities.formatDate(v, 'America/Bogota', 'yyyy-MM-dd');
-  const s = String(v).trim();
-  return s.match(/^\d{4}-\d{2}-\d{2}/) ? s.substring(0, 10) : null;
-}
-
-function contarValidos(arr) {
-  return arr.filter(v => v !== null && v !== undefined && !isNaN(v)).length;
+function formatearFecha(val) {
+  if (!val) return null;
+  if (val instanceof Date && !isNaN(val)) {
+    return Utilities.formatDate(val, "America/Bogota", "yyyy-MM-dd");
+  }
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    return str.substring(0, 10);
+  }
+  const d = new Date(str);
+  if (!isNaN(d)) {
+    return Utilities.formatDate(d, "America/Bogota", "yyyy-MM-dd");
+  }
+  return null;
 }
 
 function calcularPromedio(arr) {
-  const val = arr.filter(v => v !== null && v !== undefined && !isNaN(v));
-  if (val.length === 0) return null;
-  return Math.round((val.reduce((a, b) => a + b, 0) / val.length) * 100) / 100;
+  const nums = arr.filter(n => typeof n === 'number' && !isNaN(n));
+  if (nums.length === 0) return null;
+  const sum = nums.reduce((acc, curr) => acc + curr, 0);
+  return Math.round((sum / nums.length) * 100) / 100;
 }
 
-function escribirLogEnHoja(ss, item) {
-  try {
-    let s = ss.getSheetByName('Log_Sync_Supabase');
-    if (!s) {
-      s = ss.insertSheet('Log_Sync_Supabase');
-      s.appendRow(['Timestamp', 'Registros Leídos', 'Sincronizados Supabase', 'Total Errores', 'Detalle Errores']);
-      s.setFrozenRows(1);
-    }
-    s.appendRow([
-      Utilities.formatDate(item.fecha, 'America/Bogota', 'yyyy-MM-dd HH:mm:ss'),
-      item.leidos, item.sincronizados, item.errores, item.detalleErrores
-    ]);
-  } catch (e) {
-    Logger.log("Error log: " + e.message);
-  }
+function contarValidos(arr) {
+  return arr.filter(n => typeof n === 'number' && !isNaN(n)).length;
 }
