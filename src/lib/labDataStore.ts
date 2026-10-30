@@ -203,8 +203,9 @@ class LabDataStore {
           entContactMap15.get(idContacto15) ||
           null;
 
-        const opinionCleanLab = stripHtml(row.opinion_evaluador_lab);
-        const modeloCleanLab = stripHtml(row.recomendacion_modelo);
+        const rawOpinion = row.opinion_evaluador_lab || (row.asistio ? 'ACEPTADO: De acuerdo' : 'RECHAZADO: No asistió');
+        const opinionCleanLab = stripHtml(rawOpinion);
+        const modeloCleanLab = stripHtml(row.recomendacion_modelo || 'Pasar');
 
         const uniPrioritaria = row.uni_prioritaria || cand?.universidadPriorizada || 'NO';
         const isBilingual = row.is_bilingual !== undefined && row.is_bilingual !== null
@@ -234,14 +235,7 @@ class LabDataStore {
         const generoClean = row.genero ? String(row.genero).trim() : (lec?.genero || cand?.grupoEtnico || null);
         const ciudadClean = row.ciudad ? String(row.ciudad).trim() : (lec?.ciudad || cand?.city || cand?.departamentoResidencia || null);
 
-        const evalCompleta: 'Si' | 'No' = (
-          opinionCleanLab ||
-          (row.comentarios_evaluador_lab && String(row.comentarios_evaluador_lab).trim() !== '') ||
-          (row.recomendacion_postulante_lab && String(row.recomendacion_postulante_lab).trim() !== '') ||
-          row.puntaje_competencias_total !== null ||
-          row.promedio_clase_5min !== null ||
-          row.puntaje_5min !== null
-        ) ? 'Si' : 'No';
+        const evalCompleta: 'Si' | 'No' = row.asistio ? 'Si' : 'No';
 
         // Cálculo determinístico de Etapa Alcanzada
         let etapaAlcanzada: LabEtapaAlcanzada = 'Lab';
