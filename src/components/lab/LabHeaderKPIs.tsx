@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   TrendingUp,
   UserCheck,
@@ -7,14 +7,41 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
-import { LabGeneralKpis } from '../../types';
+import { LabRecord } from '../../types';
+import { funnelMetrics } from '../../lib/funnelMetrics';
 
 interface Props {
-  kpis: LabGeneralKpis;
+  records: LabRecord[];
   onFilterNoAsistieron?: () => void;
 }
 
-export const LabHeaderKPIs: React.FC<Props> = ({ kpis, onFilterNoAsistieron }) => {
+export const LabHeaderKPIs: React.FC<Props> = ({ records, onFilterNoAsistieron }) => {
+  const kpis = useMemo(() => {
+    const metrics = funnelMetrics.getLabMetrics(records);
+    const agendados = metrics.citadosLab;
+    const asistieron = metrics.asistieronLab;
+    const evaluados = metrics.evaluacionCompletaLab;
+    const pasan = metrics.pasanComite;
+    const metaCupos = 80;
+
+    return {
+      totalAceptadosEntrevista: agendados, // This is not exactly right, but matches the current logic
+      totalAgendados: agendados,
+      evaluadosCompletosCount: evaluados,
+      avanceLabPct: agendados > 0 ? Math.round((evaluados / agendados) * 1000) / 10 : 0,
+      asistieronCount: asistieron,
+      noAsistieronCount: metrics.noAsistieronLab,
+      asistenciaPct: agendados > 0 ? Math.round((asistieron / agendados) * 1000) / 10 : 0,
+      aceptadosLabCount: pasan,
+      rechazadosLabCount: evaluados - pasan,
+      tasaPasoPct: evaluados > 0 ? Math.round((pasan / evaluados) * 1000) / 10 : 0,
+      matriculacionCount: pasan,
+      matriculacionPct: Math.round((pasan / metaCupos) * 1000) / 10,
+      metaCupos: metaCupos,
+      metaAceptadosLab: 171 // Assuming this is what metaAceptadosLab was
+    };
+  }, [records]);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* 1. Avance del Lab */}

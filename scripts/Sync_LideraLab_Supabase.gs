@@ -309,6 +309,28 @@ function sincronizarLideraLabASupabase() {
     }
   }
 
+  // 1.5 Mapa de Pre-evaluados
+  const preEvaluadosSet = new Set();
+  const sheetPreEval = ss.getSheetByName('Candidatos pre-evaluados');
+  if (sheetPreEval) {
+    const dataPre = sheetPreEval.getDataRange().getValues();
+    const hPre = dataPre[0].map(h => normalizarTexto(h));
+    const colIdDiaPre = buscarIndiceColumna(hPre, ['id dia de entrevista', 'dia de entrevista: id', 'id dia']);
+    const colIdContPre = buscarIndiceColumna(hPre, ['id de contacto', 'id contacto']);
+    const colCedPre = buscarIndiceColumna(hPre, ['cedula', 'cédula', 'documento']);
+
+    for (let i = 1; i < dataPre.length; i++) {
+      const f = dataPre[i];
+      const idDia = colIdDiaPre >= 0 ? String(f[colIdDiaPre] || '').trim() : '';
+      const idCont = colIdContPre >= 0 ? String(f[colIdContPre] || '').trim() : '';
+      const ced = colCedPre >= 0 ? String(f[colCedPre] || '').trim() : '';
+
+      if (idDia) preEvaluadosSet.add(idDia);
+      if (idCont) preEvaluadosSet.add(idCont);
+      if (ced) preEvaluadosSet.add('CED_' + ced);
+    }
+  }
+
   // 2. Mapa de Promedios y Comentarios Previos
   const mapaPromedios = new Map();
   if (sheetPromedios) {
@@ -414,9 +436,9 @@ function sincronizarLideraLabASupabase() {
   const colPTotal = buscarIndiceColumna(headers, ['puntaje competencias', 'total competencias', 'puntaje total']);
 
   const colRecModelo = buscarIndiceColumna(headers, ['recomendacion modelo']);
-  const colOpinionLab = buscarIndiceColumna(headers, ['decision evaluador lab', 'opinion evaluador lab', 'decision evaluador']);
-  const colComLab = buscarIndiceColumna(headers, ['comentarios evaluador lab', 'comentarios evaluador']);
-  const colRecPostulante = buscarIndiceColumna(headers, ['recomendacion postulante lab', 'recomendacion postulante']);
+  const colOpinionLab = buscarIndiceColumna(headers, ['opinion del evaluador', 'opinion evaluador lab', 'decision evaluador lab', 'decision evaluador']);
+  const colComLab = buscarIndiceColumna(headers, ['comentarios evaluador lab', 'comentarios evaluador', 'comentarios del evaluador']);
+  const colRecPostulante = buscarIndiceColumna(headers, ['recomendacion postulante lab', 'recomendacion postulante', 'recomendacion al postulante']);
   const colEvalComp = buscarIndiceColumna(headers, ['evaluacion completa', 'evaluación completa']);
 
   const filas = [];
@@ -442,7 +464,8 @@ function sincronizarLideraLabASupabase() {
       || {};
 
     const rawEvalComp = colEvalComp >= 0 ? String(r[colEvalComp] || '').trim().toLowerCase() : '';
-    const evalComp = (rawEvalComp === 'si' || rawEvalComp === 'true' || rawEvalComp === 'sí') ? 'Si' : 'No';
+    const opinionText = colOpinionLab >= 0 ? limpiarTexto(r[colOpinionLab]) : null;
+    const evalComp = (rawEvalComp === 'verdadero' || rawEvalComp === 'true' || rawEvalComp === 'si' || rawEvalComp === 'sí' || rawEvalComp === '1' || opinionText !== null) ? 'Si' : 'No';
 
     const sp = colSerProfe >= 0 ? parsearNumero(r[colSerProfe]) : null;
     const ii = colImIntereses >= 0 ? parsearNumero(r[colImIntereses]) : null;
@@ -463,6 +486,7 @@ function sincronizarLideraLabASupabase() {
     filas.push({
       id_dia_entrevista: idDia,
       id_contacto: idContacto || idDia,
+      es_pre_evaluado: (idDia && preEvaluadosSet.has(idDia)) || (idContacto && preEvaluadosSet.has(idContacto)) || (cedula && preEvaluadosSet.has('CED_' + cedula)),
       fecha_lab: colFecha >= 0 ? formatearFecha(r[colFecha]) : null,
       id_fecha_agenda: colAgenda >= 0 ? String(r[colAgenda] || '').trim() : null,
       bloque: colBloque >= 0 ? String(r[colBloque] || '').trim() : null,

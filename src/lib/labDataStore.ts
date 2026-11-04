@@ -203,9 +203,9 @@ class LabDataStore {
           entContactMap15.get(idContacto15) ||
           null;
 
-        const rawOpinion = row.opinion_evaluador_lab || (row.asistio ? 'ACEPTADO: De acuerdo' : 'RECHAZADO: No asistió');
+        const rawOpinion = row.opinion_evaluador_lab || '';
         const opinionCleanLab = stripHtml(rawOpinion);
-        const modeloCleanLab = stripHtml(row.recomendacion_modelo || 'Pasar');
+        const modeloCleanLab = stripHtml(row.recomendacion_modelo);
 
         const uniPrioritaria = row.uni_prioritaria || cand?.universidadPriorizada || 'NO';
         const isBilingual = row.is_bilingual !== undefined && row.is_bilingual !== null
@@ -235,17 +235,30 @@ class LabDataStore {
         const generoClean = row.genero ? String(row.genero).trim() : (lec?.genero || cand?.grupoEtnico || null);
         const ciudadClean = row.ciudad ? String(row.ciudad).trim() : (lec?.ciudad || cand?.city || cand?.departamentoResidencia || null);
 
-        const evalCompleta: 'Si' | 'No' = row.asistio ? 'Si' : 'No';
+        const rawEvalComp = String(row.evaluacion_completa || '').trim().toLowerCase();
+        const evalCompleta: 'Si' | 'No' = (
+          rawEvalComp === 'verdadero' ||
+          rawEvalComp === 'true' ||
+          rawEvalComp === 'si' ||
+          rawEvalComp === 'sí' ||
+          rawEvalComp === '1' ||
+          Boolean(opinionCleanLab)
+        ) ? 'Si' : 'No';
 
         // Cálculo determinístico de Etapa Alcanzada
         let etapaAlcanzada: LabEtapaAlcanzada = 'Lab';
-        if (isLabAceptado(opinionCleanLab) && evalCompleta === 'Si') {
-          etapaAlcanzada = 'Comité';
+        if (evalCompleta === 'Si') {
+          if (isLabAceptado(opinionCleanLab)) {
+            etapaAlcanzada = 'Comité';
+          } else {
+            etapaAlcanzada = 'Lab';
+          }
         }
 
         return {
           id_dia_entrevista: idDia,
           id_contacto: idContacto,
+          es_pre_evaluado: Boolean(row.es_pre_evaluado),
           fecha_lab: row.fecha_lab || null,
           id_fecha_agenda: row.id_fecha_agenda || null,
           bloque: row.bloque || null,

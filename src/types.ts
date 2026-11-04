@@ -364,6 +364,7 @@ export interface LabRecord {
   // Llaves
   id_dia_entrevista: string;
   id_contacto: string;
+  es_pre_evaluado: boolean;
 
   // Agenda & Logística
   fecha_lab: string; // ej. '2026-10-21'

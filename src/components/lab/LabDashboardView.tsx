@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { LabRecord, CombinablePerfilFilterState } from '../../types';
+import { LabRecord, CombinablePerfilFilterState, Candidate, LecturaRecord, EntrevistaRecord } from '../../types';
 import { labDataStore } from '../../lib/labDataStore';
-import {
-  calculateLabGeneralKpis,
-  calculateLabEmbudo,
-  isLabAceptado
-} from '../../lib/labMetricsCalculator';
+import { dataStore } from '../../lib/dataStore';
+import { lecturasDataStore } from '../../lib/lecturasDataStore';
+import { entrevistasDataStore } from '../../lib/entrevistasDataStore';
+import { funnelMetrics } from '../../lib/funnelMetrics';
+import { isLabAceptado } from '../../lib/labMetricsCalculator';
 import { SectionLevelHeader } from '../common/SectionLevelHeader';
 import { DashboardViewHeader } from '../common/DashboardViewHeader';
 import { LabHeaderKPIs } from './LabHeaderKPIs';
@@ -22,6 +22,9 @@ interface Props {
 
 export const LabDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp }) => {
   const [records, setRecords] = useState<LabRecord[]>(() => labDataStore.getRecords());
+  const [candidates, setCandidates] = useState<Candidate[]>(() => dataStore.getCandidates());
+  const [lecturas, setLecturas] = useState<LecturaRecord[]>(() => lecturasDataStore.getLecturas());
+  const [entrevistas, setEntrevistas] = useState<EntrevistaRecord[]>(() => entrevistasDataStore.getEntrevistas());
   const [selectedCandidate, setSelectedCandidate] = useState<LabRecord | null>(null);
   const [isFichaOpen, setIsFichaOpen] = useState(false);
   const [directorioInitialFilter, setDirectorioInitialFilter] = useState('TODOS');
@@ -60,25 +63,38 @@ export const LabDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp }) =
   };
 
   useEffect(() => {
-    const unsub = labDataStore.subscribe(() => {
-      setRecords(labDataStore.getRecords());
-    });
-    return () => unsub();
+    const unsubLab = labDataStore.subscribe(() => setRecords(labDataStore.getRecords()));
+    const unsubCand = dataStore.subscribe(() => setCandidates(dataStore.getCandidates()));
+    const unsubLec = lecturasDataStore.subscribe(() => setLecturas(lecturasDataStore.getLecturas()));
+    const unsubEnt = entrevistasDataStore.subscribe(() => setEntrevistas(entrevistasDataStore.getEntrevistas()));
+    
+    return () => {
+      unsubLab();
+      unsubCand();
+      unsubLec();
+      unsubEnt();
+    };
   }, []);
 
-  const kpis = useMemo(() => {
-    return calculateLabGeneralKpis(records);
-  }, [records]);
-
   const embudo = useMemo(() => {
-    const elegibles = totalCumplenMinimosProp && totalCumplenMinimosProp > 0 ? totalCumplenMinimosProp : 1138;
-    return calculateLabEmbudo(records, 2022, elegibles);
-  }, [records, totalCumplenMinimosProp]);
+    const postulantes = funnelMetrics.getPostulantes(candidates);
+    const labMetrics = funnelMetrics.getLabMetrics(records);
+    return {
+      aplicaron: postulantes.length,
+      elegibles: funnelMetrics.getElegibles(candidates).length,
+      pasaronLecturas: funnelMetrics.getPasaronLecturas(lecturas).length,
+      aceptadosEntrevista: funnelMetrics.getAceptadosEntrevista(entrevistas).length,
+      agendadosLab: labMetrics.citadosLab,
+      asistieronLab: labMetrics.asistieronLab,
+      evaluacionCompletaLab: labMetrics.evaluacionCompletaLab,
+      pasanMatriculacion: labMetrics.pasanComite
+    };
+  }, [records, candidates, lecturas, entrevistas]);
 
   // Universo base de aceptados en Lab
   const aceptadosLab = useMemo(() => {
     return records.filter(
-      r => r.evaluacion_completa === 'Si' && isLabAceptado(r.opinion_evaluador_lab)
+      r => (r.evaluacion_completa === 'Si' || r.es_pre_evaluado) && isLabAceptado(r.opinion_evaluador_lab)
     );
   }, [records]);
 
@@ -132,7 +148,7 @@ export const LabDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp }) =
         viewName="Progreso y Evaluación"
         theme="amber"
         cohortBadge="Cohorte 2027"
-        subtitle="Jornada presencial de evaluación a la que llegan los candidatos aceptados en Entrevistas, asistencia a jornadas, competencias y paso a matriculación."
+        subtitle="Jornada presencial de evaluación a la que llegan los candidatos aceptados en Entrevistas, asistencia a jornadas, competencias y paso a comité."
       />
 
       {/* NIVEL 1 — INDICADORES GENERALES Y EMBUDO DE CONVERSIÓN */}
@@ -147,7 +163,12 @@ export const LabDashboardView: React.FC<Props> = ({ totalCumplenMinimosProp }) =
         <LabEmbudo embudo={embudo} />
 
         {/* 4 KPI Cards */}
-        <LabHeaderKPIs kpis={kpis} onFilterNoAsistieron={handleFilterNoAsistieron} />
+        <LabHeaderKPIs 
+            // We need to update this component too to use the new metric calculations
+            // kpis={kpis} 
+            records={records}
+            onFilterNoAsistieron={handleFilterNoAsistieron} 
+        />
       </section>
 
       {/* NIVEL 2: Sección Candidato — Resultados y Perfil Estratégico (Estructura idéntica a Entrevistas) */}
