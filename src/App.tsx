@@ -31,7 +31,7 @@ import { ToastContainer, ToastMessage } from './components/Toast';
 import { LecturasDashboardView } from './components/lecturas/LecturasDashboardView';
 import { EntrevistasDashboardView } from './components/entrevistas/EntrevistasDashboardView';
 import { LabDashboardView } from './components/lab/LabDashboardView';
-import { GeneralFunnelPlaceholder } from './components/GeneralFunnelPlaceholder';
+import { ReporteGeneralView } from './components/reporte/ReporteGeneralView';
 import { SectionLevelHeader } from './components/common/SectionLevelHeader';
 import { DashboardViewHeader } from './components/common/DashboardViewHeader';
 import { lecturasDataStore } from './lib/lecturasDataStore';
@@ -43,8 +43,8 @@ export default function App() {
   const [goals, setGoals] = useState<GoalTarget[]>([]);
   const [universities, setUniversities] = useState<UniversityMapping[]>([]);
 
-  // Vista de entrada por defecto: Dashboard de LIDERA Lab
-  const [activeTab, setActiveTab] = useState<ActiveTab>('lab_progress');
+  // Vista de entrada por defecto: Reporte General
+  const [activeTab, setActiveTab] = useState<ActiveTab>('general_funnel');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -292,7 +292,7 @@ export default function App() {
         {/* Main Dashboard Content */}
         <main className="flex-1 min-w-0 space-y-6">
           {activeTab === 'general_funnel' && (
-            <GeneralFunnelPlaceholder />
+            <ReporteGeneralView />
           )}
 
           {activeTab === 'lecturas_progress' && (

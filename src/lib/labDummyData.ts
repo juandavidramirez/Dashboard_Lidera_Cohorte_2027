@@ -288,6 +288,7 @@ export function generateLabDummyData(): LabRecord[] {
     records.push({
       id_dia_entrevista: `a0DQU00002${String(1000 + i).padStart(5, '0')}`,
       id_contacto: `003QU00002${String(2000 + i).padStart(6, '0')}`,
+      es_pre_evaluado: i < 21,
       fecha_lab: fechaLab,
       id_fecha_agenda: `AG-202610${fechaLab.slice(8)}-${bloque === 'Mañana' ? 'M' : 'T'}`,
       bloque,

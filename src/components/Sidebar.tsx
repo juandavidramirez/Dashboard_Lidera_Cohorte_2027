@@ -68,6 +68,19 @@ export const Sidebar: React.FC<Props> = ({
     lab: activeTab === 'lab_progress'
   });
 
+  const [activeReportSection, setActiveReportSection] = useState<string>('resumen-ejecutivo');
+
+  useEffect(() => {
+    const handleReportSectionChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string }>;
+      if (customEvent.detail && customEvent.detail.id) {
+        setActiveReportSection(customEvent.detail.id);
+      }
+    };
+    window.addEventListener('reporte-section-change', handleReportSectionChange);
+    return () => window.removeEventListener('reporte-section-change', handleReportSectionChange);
+  }, []);
+
   // Asegura que al cambiar de pestaña externamente se abra la sección correspondiente
   useEffect(() => {
     if (activeTab === 'general_funnel') {
@@ -189,15 +202,23 @@ export const Sidebar: React.FC<Props> = ({
 
       {/* Navigation Menu Reorganizado en 3 Acordeones Desplegables */}
       <nav className="flex-1 p-3.5 space-y-3.5 overflow-y-auto">
-        {/* GRUPO 1: DASHBOARD GENERAL (Desplegable) */}
+        {/* GRUPO 1: REPORTE GENERAL (Desplegable con Tabla de Contenidos) */}
         <div className="rounded-lg bg-slate-900/40 border border-slate-800/80 overflow-hidden">
           <button
-            onClick={() => toggleSection('general')}
-            className="w-full flex items-center justify-between p-2.5 text-left hover:bg-slate-800/60 transition-colors group"
+            onClick={() => {
+              toggleSection('general');
+              if (activeTab !== 'general_funnel') {
+                setActiveTab('general_funnel');
+              }
+            }}
+            className="w-full flex items-center justify-between p-2.5 text-left hover:bg-slate-800/60 transition-colors group cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
-                1. Dashboard General
+                1. Reporte General
+              </span>
+              <span className="text-[9px] bg-amber-500/90 text-slate-950 font-black px-1.5 py-0.2 rounded uppercase">
+                Final
               </span>
             </div>
             <ChevronDown
@@ -208,33 +229,46 @@ export const Sidebar: React.FC<Props> = ({
           </button>
 
           {openSections.general && (
-            <div className="p-1.5 space-y-1 border-t border-slate-800/70 bg-slate-950/20">
-              {generalNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
+            <div className="p-1.5 space-y-0.5 border-t border-slate-800/70 bg-slate-950/30 max-h-80 overflow-y-auto">
+              {[
+                { id: 'resumen-ejecutivo', num: '1', label: 'Resumen ejecutivo' },
+                { id: 'alcance-definiciones', num: '2', label: 'Alcance y definiciones' },
+                { id: 'embudo-completo', num: '3', label: 'Embudo completo' },
+                { id: 'convocatoria', num: '4', label: 'Convocatoria' },
+                { id: 'lecturas', num: '5', label: 'Lecturas' },
+                { id: 'entrevistas', num: '6', label: 'Entrevistas' },
+                { id: 'lidera-lab', num: '7', label: 'LIDERA Lab' },
+                { id: 'comite-matricula', num: '8', label: 'Comité y matrícula' },
+                { id: 'cambio-perfil', num: '9', label: 'Cómo cambia el perfil' },
+                { id: 'perfil-cohorte', num: '10', label: 'Perfil cohorte seleccionada' },
+                { id: 'conclusiones-recomendaciones', num: '11', label: 'Conclusiones y recomend.' },
+                { id: 'anexo', num: '12', label: 'Anexo' }
+              ].map((item) => {
+                const isSectionActive = activeTab === 'general_funnel' && activeReportSection === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveTab(item.id as ActiveTab)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                      isActive
-                        ? 'bg-white/10 text-white shadow-xs border-l-2 border-amber-400'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    onClick={() => {
+                      if (activeTab !== 'general_funnel') {
+                        setActiveTab('general_funnel');
+                        setTimeout(() => {
+                          document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                        }, 120);
+                      } else {
+                        document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                      setActiveReportSection(item.id);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] transition-colors text-left cursor-pointer ${
+                      isSectionActive
+                        ? 'bg-amber-400/15 text-amber-300 font-bold border-l-2 border-amber-400 pl-2'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 font-medium'
                     }`}
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="font-mono text-[10px] text-amber-400/80 shrink-0">{item.num}.</span>
                       <span className="truncate">{item.label}</span>
                     </div>
-                    {item.badge && (
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold shrink-0 ${
-                          isActive ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
                   </button>
                 );
               })}
@@ -410,9 +444,6 @@ export const Sidebar: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-extrabold group-hover:text-white transition-colors">
                 5. Dashboard LIDERA Lab
-              </span>
-              <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-black uppercase tracking-wider">
-                Nuevo
               </span>
             </div>
             <ChevronDown

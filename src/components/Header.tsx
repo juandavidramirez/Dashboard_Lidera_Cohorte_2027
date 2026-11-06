@@ -345,21 +345,24 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* 5. Dashboard General (Embudo Completo) */}
+                  {/* 1. Reporte General (Cierre Convocatoria) */}
                   <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/80 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
-                          <Network className="w-4 h-4 text-slate-600" />
+                        <div className="p-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                          <Network className="w-4 h-4 text-amber-700" />
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-bold text-slate-900">
-                              Dashboard General
+                              1. Reporte General
+                            </span>
+                            <span className="text-[9px] bg-amber-500 text-white font-black px-1.5 py-0.2 rounded uppercase">
+                              Final
                             </span>
                           </div>
                           <span className="text-[10px] text-slate-500 block">
-                            Embudo consolidado de conversión
+                            Reporte ejecutivo de cierre y embudo
                           </span>
                         </div>
                       </div>
@@ -371,7 +374,7 @@ export const Header: React.FC<Props> = ({
                         className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-950 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
                       >
                         <ExternalLink className="w-3 h-3" />
-                        Ver sección
+                        Ver reporte
                       </button>
                     </div>
                   </div>
