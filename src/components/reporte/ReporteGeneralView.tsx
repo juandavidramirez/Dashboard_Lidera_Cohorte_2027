@@ -102,6 +102,7 @@ export const ReporteGeneralView: React.FC = () => {
   const [downloadModal, setDownloadModal] = useState<{
     isOpen: boolean;
     blobUrl?: string;
+    dataUri?: string;
     fileName?: string;
   }>({ isOpen: false });
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -226,6 +227,7 @@ export const ReporteGeneralView: React.FC = () => {
         setDownloadModal({
           isOpen: true,
           blobUrl: result.blobUrl,
+          dataUri: result.dataUri,
           fileName: 'Reporte_Final_Convocatoria_LIDERA_Cohorte_2027.pdf'
         });
       } else {
@@ -2142,43 +2144,54 @@ export const ReporteGeneralView: React.FC = () => {
 
               {downloadModal.blobUrl ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    El documento oficial (12 secciones completas) ha sido generado en tamaño Carta (Letter) con resolución nítida. Si la descarga no inició automáticamente por las políticas de seguridad de este visor, usa cualquiera de los siguientes accesos directos:
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    El documento oficial (12 secciones completas) ha sido generado con éxito en formato Carta (Letter) de alta fidelidad. Selecciona tu opción de descarga preferida:
                   </p>
 
                   <div className="space-y-2.5 pt-1">
-                    {/* Botón 1: Descarga directa de archivo */}
+                    {/* Opción 1: Descarga directa de archivo */}
                     <a
                       href={downloadModal.blobUrl}
                       download="Reporte_Final_Convocatoria_LIDERA_Cohorte_2027.pdf"
                       className="w-full flex items-center justify-center gap-2.5 px-4 py-3 bg-[#152238] hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer group"
                     >
                       <Download className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                      <span>Descargar archivo PDF ahora</span>
+                      <span>1. Guardar archivo PDF (.pdf) en tu equipo</span>
                     </a>
 
-                    {/* Botón 2: Abrir en pestaña nueva */}
+                    {/* Opción 2: Abrir visor PDF en pestaña nueva */}
                     <a
                       href={downloadModal.blobUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-bold text-xs rounded-xl border border-emerald-300 transition-colors cursor-pointer"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
-                      <span>Abrir visor PDF en pestaña nueva</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>2. Abrir PDF en pestaña nueva (con botón de descarga nativo)</span>
                     </a>
 
-                    {/* Botón 3: Imprimir directamente */}
+                    {/* Opción 3: Abrir dashboard fuera del iframe */}
+                    <a
+                      href={window.location.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-xl border border-slate-300 transition-colors cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                      <span>3. Abrir dashboard en pestaña independiente (sin marco/iframe)</span>
+                    </a>
+
+                    {/* Opción 4: Imprimir directamente */}
                     <button
                       type="button"
                       onClick={() => {
                         setDownloadModal({ isOpen: false });
                         handleImprimirSistema();
                       }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 font-semibold text-xs transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-1.5 text-slate-500 hover:text-slate-800 font-medium text-xs transition-colors cursor-pointer"
                     >
                       <Printer className="w-3.5 h-3.5 text-slate-400" />
-                      <span>O guardar/imprimir con el navegador (Ctrl+P)</span>
+                      <span>4. O guardar usando el diálogo de impresión (Ctrl+P)</span>
                     </button>
                   </div>
                 </div>

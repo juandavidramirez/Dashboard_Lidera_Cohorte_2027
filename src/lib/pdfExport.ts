@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 export interface PdfExportProgress {
   step: number;
@@ -11,14 +11,14 @@ export interface PdfExportResult {
   success: boolean;
   blob?: Blob;
   blobUrl?: string;
+  dataUri?: string;
   error?: string;
 }
 
 /**
- * Motor robusto de exportación a PDF seccional para el Reporte Final LIDERA.
- * Procesa cada sección de forma independiente para evitar superar los límites
- * de memoria y altura de canvas de los navegadores (16.384px), garantizando
- * compatibilidad total en entornos iframe (AI Studio, Cloud Run, Vercel).
+ * Motor robusto de exportación a PDF basado en html-to-image (SVG foreignObject)
+ * y jsPDF. Compatible al 100% con Tailwind CSS v4, sintaxis de color oklch(),
+ * Recharts SVGs y ejecución dentro de entornos iframe (AI Studio, Cloud Run, Vercel).
  */
 export async function exportReporteToPdf(
   onProgress?: (progress: PdfExportProgress) => void
@@ -40,7 +40,7 @@ export async function exportReporteToPdf(
       'anexo'
     ];
 
-    // Recolectar elementos existentes
+    // Localizar las secciones existentes en el DOM
     const elements: { id: string; el: HTMLElement }[] = [];
     for (const id of sectionIds) {
       const el = document.getElementById(id);
@@ -50,7 +50,6 @@ export async function exportReporteToPdf(
     }
 
     if (elements.length === 0) {
-      // Fallback: si no encuentra secciones individuales, buscar contenedor principal
       const mainEl = document.getElementById('reporte-documento-completo');
       if (mainEl) {
         elements.push({ id: 'reporte-documento-completo', el: mainEl });
@@ -63,7 +62,7 @@ export async function exportReporteToPdf(
     onProgress?.({
       step: 1,
       totalSteps,
-      message: 'Iniciando generación de documento PDF...'
+      message: 'Iniciando compilador PDF...'
     });
 
     // Dimensiones estándar Carta (Letter) en milímetros
@@ -86,51 +85,57 @@ export async function exportReporteToPdf(
 
     for (let i = 0; i < elements.length; i++) {
       const item = elements[i];
-      const sectionName = item.el.querySelector('h2, h1')?.textContent?.trim() || `Sección ${i + 1}`;
+      const sectionHeading =
+        item.el.querySelector('h1, h2')?.textContent?.trim() || `Sección ${i + 1}`;
 
       onProgress?.({
         step: i + 1,
         totalSteps,
-        message: `Procesando: ${sectionName.slice(0, 32)}...`
+        message: `Compilando: ${sectionHeading.slice(0, 30)}...`
       });
 
-      // Captura de alta fidelidad de la sección individual
-      const canvas = await html2canvas(item.el, {
-        scale: 1.6, // Nitidez óptima sin desbordar memoria
-        useCORS: true,
-        logging: false,
+      // Renderizado mediante html-to-image (soporte nativo de oklch y SVG)
+      const dataUrl = await toPng(item.el, {
+        quality: 0.95,
+        pixelRatio: 1.5,
         backgroundColor: '#ffffff',
-        windowWidth: 1100,
-        ignoreElements: (element) => {
-          return (
-            element.getAttribute('data-html2canvas-ignore') === 'true' ||
-            element.classList.contains('print:hidden')
-          );
+        filter: (node) => {
+          if (node instanceof HTMLElement) {
+            return (
+              node.getAttribute('data-html2canvas-ignore') !== 'true' &&
+              !node.classList.contains('print:hidden')
+            );
+          }
+          return true;
         }
       });
 
-      if (canvas.width === 0 || canvas.height === 0) {
-        continue;
-      }
+      // Cargar la imagen para calcular proporciones exactas
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error(`Error al procesar imagen de sección ${item.id}`));
+      });
 
-      // Convertir altura de la sección a milímetros proporcionales
-      const imgHeightMm = (canvas.height * printableWidth) / canvas.width;
+      const imgWidthPx = img.naturalWidth || 1000;
+      const imgHeightPx = img.naturalHeight || 800;
+      const imgHeightMm = (imgHeightPx * printableWidth) / imgWidthPx;
 
-      // Si la sección cabe en una sola página
       if (imgHeightMm <= printableHeight) {
+        // La sección cabe en una página
         if (!isFirstPage) {
           doc.addPage('letter', 'portrait');
         } else {
           isFirstPage = false;
         }
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        doc.addImage(imgData, 'JPEG', marginX, marginTop, printableWidth, imgHeightMm);
+        doc.addImage(dataUrl, 'PNG', marginX, marginTop, printableWidth, imgHeightMm);
       } else {
-        // Si la sección es más alta que una página Letter, dividir el canvas en tajadas verticales
-        const pxPerMm = canvas.width / printableWidth;
+        // La sección excede la altura de una página: secciona limpiamente
+        const pxPerMm = imgWidthPx / printableWidth;
         const pageHeightPx = Math.floor(printableHeight * pxPerMm);
-        let remainingHeightPx = canvas.height;
+        let remainingHeightPx = imgHeightPx;
         let sourceY = 0;
 
         while (remainingHeightPx > 0) {
@@ -142,30 +147,29 @@ export async function exportReporteToPdf(
 
           const currentChunkHeightPx = Math.min(pageHeightPx, remainingHeightPx);
 
-          // Crear canvas auxiliar para la tajada actual
-          const chunkCanvas = document.createElement('canvas');
-          chunkCanvas.width = canvas.width;
-          chunkCanvas.height = currentChunkHeightPx;
-          const chunkCtx = chunkCanvas.getContext('2d');
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = imgWidthPx;
+          sliceCanvas.height = currentChunkHeightPx;
+          const ctx = sliceCanvas.getContext('2d');
 
-          if (chunkCtx) {
-            chunkCtx.fillStyle = '#ffffff';
-            chunkCtx.fillRect(0, 0, chunkCanvas.width, chunkCanvas.height);
-            chunkCtx.drawImage(
-              canvas,
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+            ctx.drawImage(
+              img,
               0,
               sourceY,
-              canvas.width,
+              imgWidthPx,
               currentChunkHeightPx,
               0,
               0,
-              canvas.width,
+              imgWidthPx,
               currentChunkHeightPx
             );
 
-            const chunkHeightMm = (currentChunkHeightPx * printableWidth) / canvas.width;
-            const chunkImgData = chunkCanvas.toDataURL('image/jpeg', 0.95);
-            doc.addImage(chunkImgData, 'JPEG', marginX, marginTop, printableWidth, chunkHeightMm);
+            const sliceDataUrl = sliceCanvas.toDataURL('image/png');
+            const sliceHeightMm = (currentChunkHeightPx * printableWidth) / imgWidthPx;
+            doc.addImage(sliceDataUrl, 'PNG', marginX, marginTop, printableWidth, sliceHeightMm);
           }
 
           sourceY += currentChunkHeightPx;
@@ -177,10 +181,10 @@ export async function exportReporteToPdf(
     onProgress?.({
       step: totalSteps,
       totalSteps,
-      message: 'Compilando y aplicando pie de página...'
+      message: 'Aplicando membrete institucional y numeración...'
     });
 
-    // Añadir numeración y encabezado institucional a todas las páginas
+    // Añadir encabezado y pie de página institucional
     const totalPages = doc.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {
       doc.setPage(p);
@@ -188,56 +192,58 @@ export async function exportReporteToPdf(
       doc.setFontSize(8);
       doc.setTextColor(140, 150, 165);
 
-      // Encabezado superior sutil
+      // Encabezado
       doc.text(
-        'Enseña por Colombia — Convocatoria LIDERA Cohorte 2027 (Reporte Ejecutivo Oficial)',
+        'Enseña por Colombia — Convocatoria LIDERA Cohorte 2027 (Reporte Final Ejecutivo)',
         marginX,
         7
       );
 
-      // Pie de página con numeración
+      // Pie de página
       doc.text(
         `Página ${p} de ${totalPages}`,
-        pageWidth - marginX - 24,
+        pageWidth - marginX - 22,
         pageHeight - 6
       );
       doc.text(
-        'Fecha de corte: 4 y 6 de noviembre de 2026',
+        'Corte oficial: 4 y 6 de noviembre de 2026',
         marginX,
         pageHeight - 6
       );
     }
 
-    // Generación del archivo final en Blob
+    // Exportar el documento como Blob y DataURI
     const blob = doc.output('blob');
     const blobUrl = URL.createObjectURL(blob);
+    const dataUri = doc.output('datauristring');
     const fileName = 'Reporte_Final_Convocatoria_LIDERA_Cohorte_2027.pdf';
 
-    // Intento 1: Descarga directa por enlace HTML5 estándar
+    // Intento de descarga programática
     try {
-      const downloadLink = document.createElement('a');
-      downloadLink.href = blobUrl;
-      downloadLink.download = fileName;
-      downloadLink.style.display = 'none';
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
       setTimeout(() => {
-        if (document.body.contains(downloadLink)) {
-          document.body.removeChild(downloadLink);
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
         }
       }, 500);
-    } catch (clickErr) {
-      console.warn('Click programático bloqueado por sandbox:', clickErr);
+    } catch (e) {
+      console.warn('Descarga automática directa no permitida por sandbox:', e);
     }
 
     return {
       success: true,
       blob,
-      blobUrl
+      blobUrl,
+      dataUri
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error('Error durante la exportación a PDF:', err);
+    console.error('Error durante la generación del PDF:', err);
     return {
       success: false,
       error: errorMsg
